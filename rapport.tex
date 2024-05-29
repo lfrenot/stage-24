@@ -69,7 +69,7 @@
   \leon{Abstract}
 \end{abstract}
 
-\section*{Introduction}
+\section{Introduction}
 \label{sec:intro}
 
 \indent
@@ -80,906 +80,114 @@
 \paragraph{}
 \leon{Importance de la compilation certifiée, et surtout de certifier les optims.}
 
-
 \paragraph{The Contribution of This Work}
-\begin{description}
+\begin{itemize}
     \item \leon{Design d'un langage de patterns + Implémentation naive d'un matcher}
     \item \leon{Preuve d'un théorème central pour prouver des optims (sur un CFG)}
     \item \leon{Utiliser ce langage pour deux optims + preuves de correction}
-\end{description}
+\end{itemize}
+\paragraph{Premier exemple: CCstP}
 
 \section{Key concepts}
+\label{sec:concepts}
 
 \subsection{LLVM and Vellvm}
 
 \leon{llvm (très rapide)}
 
-\leon{vellvm: histoire + but, niveaux d'interprétation (préciser celui auquel on se place)}
+\leon{vellvm: but, niveaux d'interprétation (préciser celui auquel on se place)}
+
+\begin{itemize}
+  \item \leon{denotational proofs, programmes ouverts $\rightarrow$ utilisera OCFG pour open CFG}
+  \item \leon{structure en couche, optimisations qui conservent les traces d'interaction}
+\end{itemize}
+
+\leon{pourquoi travailler sur vellvm}
 
 \subsection{ITrees}
 
 \leon{utilité, coinduction, structure, mechanisme de preuve}
 
 \section{Le langage de patterns}
+\label{sec:lang}
+
+\begin{itemize}
+  \item goal of section: define modular set of simple patterns that can capture optimizable subgraphs of an OCFG.
+  \item capture: have a function that, given a pattern and an ocfg, returns a/the subgraph(s) corresponding to the pattern's grammar.
+\end{itemize}
 
 \subsection{présentation des patterns + utilité}
 
-\subsection{implémentation naïve (+ raison pour s'arrèter à naïve (rapide))}
+\leon{schéma pour chaque pattern}
 
-\subsection{présentation d'une preuve?}
+\leon{dire que head et branch sont déja des patterns ``optimizés'' $\rightarrow$ explications dans~\ref{sec:appr}}
 
-\section{Théorème central: \texttt{denote\_ocfg\_equiv}}
+\begin{itemize}
+  \item Graph: Pattern ocfg
+  \item When: $\forall$ {S}, Pattern S $\rightarrow$ (S $\rightarrow$ bool) $\rightarrow$ Pattern S
+  \item Head: $\forall$ {S}, Pattern S $\rightarrow$ Pattern (bid * blk * S)
+  \item Focus: $\forall$ {S}, Pattern S $\rightarrow$ Pattern (ocfg * S)
+  \item Map: $\forall$ {S} {T}, Pattern S $\rightarrow$ (S $\rightarrow$ T) $\rightarrow$ Pattern T
+  \item Block: $\forall$ {S}, Pattern S $\rightarrow$ Pattern (bid * blk * S)
+  \item Branch: $\forall$ {S}, Pattern S $\rightarrow$ Pattern (bid * blk * S)
+\end{itemize}
 
-\leon{exemple plus précis d'une preuve par coinduction}
+\subsection{présentation de patterns/optims possibles (non implémentés)}
 
-\leon{présentation des défis que pose le formalisme + le niveau d'interprétation}
+\leon{trouver optim avec map?}
 
-\section{Cas d'études}
+\section{Cas d'étude: Block Fusion}
+\label{sec:case}
 
-\subsection{Conditional Constant Propagation}
+\subsection{motivation for Block Fusion}
 
-\subsection{Block Fusion}
+\begin{itemize}
+  \item blocks leftover by other optims
+  \item modifies CFG
+  \item fairly simple optim
+\end{itemize}
+
+\subsection{Block Fusion pattern}
 
 \leon{defis d'interprétation ($\varphi$ \& term), renomage}
 
-\section{A voir: Approfondissements}
+\section{Théorème: \texttt{denote\_ocfg\_equiv}}
+\label{sec:equiv}
 
-\subsection{Loop pattern et optimisations}
+\leon{exemple plus précis d'une preuve par coinduction}
+
+\subsection*{intro}
+
+\subsection{defis}
+
+\leon{présentation des défis que pose le formalisme + le niveau d'interprétation}
+
+\leon{schéma idée de base $\rightarrow$ problèmes noms et phi $\rightarrow$ hypothèses etc.}
+
+\subsection{hypothèses}
+
+\begin{itemize}
+  \item hyp principale: \texttt{denote\_ocfg\_equiv\_cond}
+  \item hyps sur nTO et nFROM \leon{! Schémas}
+  \item \texttt{dom\_renaming}
+\end{itemize}
+
+\subsection{lemmes}
+
+\begin{itemize}
+  \item \texttt{bk\_phi\_rename\_eutt}
+\end{itemize}
+
+\section{implémentation (+ raison pour s'arrèter à naïve (rapide))}
+
+\section{A voir: Approfondissements}
+\label{sec:appr}
+
+\subsection{Loop pattern}
+
+\subsection{Optim efficace}
 
 \section*{Conclusion}
-
-% \section{Exact Profiling}
-% \label{sec:ovf}
-
-% We shall use the program in Figure~\ref{fig:count_zeros_src} to introduce the
-% key concepts discussed in this paper.
-% Figure~\ref{fig:count_zeros_src} shows a C function, \texttt{count\_zeros},
-% that counts the occurrences of zero values within an array.
-% Notice that the exact semantics of this program is not important to this
-% presentation.
-% Nevertheless, to draw the reader's attention, we ask them the following
-% question: {\it What is the minimum number of counters that must be inserted
-% in \texttt{count\_zeros} so that we can know how many times each part of it
-% was traversed during its execution}?
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/count_zeros_src}
-%   \caption{A function, implemented in C, that counts the number of zeros
-%     within an array.}
-%   \label{fig:count_zeros_src}
-% \end{figure}
-
-% % Explain the basic idea: instrumentation via counters.
-% \paragraph{Knuth and Stevenson's method: Minimum Spanning Trees}
-% In 1973, \citet{Knuth73} showed how to find the minimum number of counters
-% necessary to instrument a program.
-% In that case, \citet{Knuth73} were logging how often each edge
-% of a program's control-flow graph (CFG) was traversed during program execution\footnote{\citeauthor{Knuth73}'s formalization use ``program flow charts". The notion of a control-flow graph was already in place at that
-%   time~\cite{Allen70}; however, it had yet to acquire the popularity that it
-%   enjoys today.}.
-% To this end, \citeauthor{Knuth73} demonstrated that it suffices to
-% instrument the complement of the minimum spanning tree of the program's
-% CFG.
-% Example~\ref{ex:nonInstrumentedCFG} illustrates these ideas.
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/nonInstrumentedCFG}
-%   \caption{The control-flow graph of the program in
-%     Fig.~\ref{fig:count_zeros_src}.
-%     Dashed edges mark a minimum spanning tree.
-%     Gray edges are the complement of that tree.}
-%   \label{fig:nonInstrumentedCFG}
-% \end{figure}
-
-% \begin{example}
-%   \label{ex:nonInstrumentedCFG} Figure~\ref{fig:nonInstrumentedCFG} shows the
-%   control-flow graph of the program in Figure~\ref{fig:count_zeros_src}.
-%   This CFG is in static single-assignment form; hence, it uses the
-%   phi-functions introduced by \citet{Rosen88} to select the right assignments
-%   at blocks where different program flows converge.
-%   Figure~\ref{fig:nonInstrumentedCFG} uses dashed edges to mark a minimum
-%   spanning tree of the CFG.
-%   The complement of this tree appears as solid gray edges.
-% \end{example}
-
-% An exact profile of function \texttt{count\_zeros} can be produced by
-% instrumenting only the gray edges in Figure~\ref{fig:nonInstrumentedCFG}.
-% \citeauthor{Knuth73} have shown how to reconstruct a complete profile from
-% frequency counts for these two edges.
-% This result follows from Kirchhoff's First Law of Flow Conservation:
-% ``{\it the sum of flows arriving into a junction point equals the sum of flows
-% leaving that point}."
-% Example~\ref{ex:instrumentedCFG} shows how this reconstruction process works.
-
-% \begin{example}
-%   \label{ex:instrumentedCFG}
-%   Figure~\ref{fig:instrumentedCFG} shows the instrumented control-flow graph of
-%   function \texttt{count\_zeros} (Figure~\ref{fig:count_zeros_src}).
-%   To simplify the figure, we use two pseudo-instructions to represent
-%   instrumentation.
-%   Function \texttt{init} initializes a vector of counters, and function
-%   \texttt{inc} increments particular positions of that vector.
-%   The gray table in Figure~\ref{fig:instrumentedCFG} shows how a full program
-%   profile can be reconstructed from these two counters.
-% \end{example}
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/instrumentedCFG}
-%   \caption{The instrumented version of the CFG in
-%     Figure~\ref{fig:nonInstrumentedCFG}.
-%     Instrumentation appears in boldface.
-%     The gray table shows how to compute full profile data at the return point.}
-%   \label{fig:instrumentedCFG}
-% \end{figure}
-
-% % Introduce the notion of an affine variable. Explain that it must have just one
-% % incrementing path
-% \citeauthor{Knuth73}'s result is optimal: full profile information cannot be
-% reconstructed if any KS counter is omitted.
-% However, it is possible to replace some of these counters with variables already
-% present in the program.
-% We call these variables {\it SESE Counters}---a name yet to be explained in
-% Section~\ref{sec:sol}.
-% Example~\ref{ex:sese} concludes this section showing how program variables can
-% replace \citeauthor{Knuth73}'s counters.
-
-% \begin{example}
-%   \label{ex:sese}
-%   In Figure~\ref{fig:instrumentedCFG}, variable \texttt{sum1} holds, at execution's
-%   end, the same value as counter \texttt{x[0]}.
-%   Similarly, variable \texttt{i1} is equivalent to counter \texttt{x[1]}.
-%   Therefore, the five last entries in the table in Figure~\ref{fig:instrumentedCFG}
-%   could be reconstructed from these variables as follows:
-%   $\mathtt{C}(\mathtt{L2}\rightarrow\mathtt{L6}) = \texttt{i1}$;
-%   $\mathtt{C}(\mathtt{L6}\rightarrow\mathtt{L9}) = \texttt{sum1}$;
-%   $\mathtt{C}(\mathtt{L9}\rightarrow\mathtt{LA}) = \texttt{sum1}$;
-%   $\mathtt{C}(\mathtt{L6}\rightarrow\mathtt{LA}) = \texttt{i1}-\texttt{sum1}$; and
-%   $\mathtt{C}(\mathtt{LA}\rightarrow\mathtt{L2}) = \texttt{i1}$.
-%   Indeed, a full profile of function \texttt{count\_zeros} can be produced without
-%   any instrumentation.
-% \end{example}
-
-% \section{Single-Entry Single-Exit Counters}
-% \label{sec:sol}
-
-% The goal of this section is to define {\it SESE Counters}, program variables that can replace KS counters.
-% To this end, this section revisits classic definitions due to \citet{Johnson94} and \citet{Havlak97}.
-% Thus, only Definition~\ref{def:sese} in this section is original; the other concepts come from previous work.
-% These definitions rely on two standard notions: control-flow graphs and
-% dominance.
-% A {\it control-flow graph} (CFG) is a directed graph $G$ with a \texttt{START} node with no incoming edge and an \texttt{END} node with no outgoing edge.
-% Vertices represent the program's {\it basic blocks}, and edges represent possible
-% program flows.
-% There is a path from \texttt{START} to any node $\ell_v \in G$, and there is a
-% path from any node $\ell_v \in G$ to \texttt{END}.
-% Given two nodes $\ell_u, \ell_v \in G$, $\ell_u$ {\it dominates} $\ell_v$ if, and only if, every path
-% from \texttt{START} to $\ell_v$ contains $\ell_u$.
-% Analogously, $\ell_v$ {\it post-dominates} $\ell_u$ if, and only if, every path from $\ell_u$
-% to \texttt{END} contains $\ell_v$.
-% From these concepts, Definition~\ref{def:loop} revisits
-%   {\it Reducible Loops}\footnote{Reducible loops are called {\it natural loops} in
-%   some textbooks, such as \citet{Appel03}'s.}.
-
-% \begin{definition}[Reducible Loop~\cite{Havlak97}]
-%   \label{def:loop}
-%   Given a CFG $G$, a reducible loop $L \subseteq G$ is a strongly-connected induced subgraph of $G$ having a vertex $\ell_h$ (i.e., $\ell_h \in L$) such that:
-%   \begin{enumerate}
-%     \item $\ell_h$ dominates every node $\ell_v \in L$;
-%     \item For any vertices $\ell_u \in G, \ell_u \notin L$ and $\ell_v \in L$, any path from $\ell_u$ to $\ell_v$ contains $\ell_h$.
-%   \end{enumerate}
-% \end{definition}
-
-% The second property in Definition~\ref{def:loop} implies that reducible loops are {\it Single-Entry} regions of a control-flow graph.
-% If, in addition of a single-entry node, every path leaving the loop passes through a common exit point, then the loop is also {\em Single-Exit}.
-% The notion of Single-Entry, Single-Exit (SESE) regions applies to subsets of the CFG, even when they do not form loops, as \citet{Johnson94} have defined:
-
-% \begin{definition}[SESE Region~\cite{Johnson94}]
-%   \label{def:reg}
-%   An ordered pair $(\ell_u, \ell_v)$ formed by two blocks $\ell_v$ and $\ell_u$ of a CFG determines a \textit{Single-Entry, Single-Exit (SESE) Region}, if, and only
-%   if:
-%   \begin{enumerate}
-%     \item $\ell_u$ dominates $\ell_v$,
-%     \item $\ell_v$ post-dominates $\ell_u$,
-%     \item If a cycle contains $\ell_u$, it contains $\ell_v$ and vice versa.
-%   \end{enumerate}
-%   The nodes $\ell_u$ and $\ell_v$ are said to be {\it Control Equivalent}.
-% \end{definition}
-
-% \begin{example}
-%   \label{ex:sese_region}
-%   Blocks \texttt{L6} and \texttt{LA} in Figure~\ref{fig:instrumentedCFG} form a
-%   SESE region.
-%   However, blocks \texttt{L6} and \texttt{L9} do not.
-%   To see why, notice that the cycle $(\mathtt{L2}, \mathtt{L6}, \mathtt{LA}, \mathtt{L2})$ does not contain block \texttt{L9}, although it
-%   contains \texttt{L6}.
-% \end{example}
-
-% The concept of a SESE counter emerges from the intersection of the notions of SESE regions, already seen in Definition~\ref{def:reg}, and the classic notion of a {\it Data-Dependence Graph}, which is standard in compiler textbooks.
-% For self-consistency, this paper restates the definition from \citet{Cooper23}, considering programs in static single-assignment form:
-
-% \begin{definition}[Data-Dependence Graph]
-%   \label{def:dep}
-%   A Data-Dependence Graph $D = (V_d, E_d)$ is a graph formed by the values defined and used in an SSA-form program $P$, such that, for each instruction $v_0 =\mathit{op}(v_1, \ldots, v_n) \in P$:
-%   \begin{itemize}
-%     \item $\{v_0, v_1, \ldots, v_n \} \subseteq V_d$;
-%     \item $v_i \rightarrow v_0 \in E_d$, for every $v_i \in \{v_1, \ldots, v_n\}$.
-%   \end{itemize}
-%   Let $G = (V_g, E_g)$ be the control-flow graph of $P$, and let $G' = (V_g', E_g')$ be an induced subgraph of $G$.
-%   The dependence graph formed only by instructions in $V_g'$ is called the
-%   dependence graph {\it induced} by $G'$.
-% \end{definition}
-
-% Given a directed graph $G$, a {\it circuit} in $G$ is a path in which source and
-% destination are the same vertex.
-% SESE counters are circuits in the dependence graph involving phi-functions and
-% increments, such that, in the case the circuit contains
-% more than two increments, any pair of increments forms a SESE region---a fact that implies that all these SESE regions are equivalent.
-% Circuits in data-dependence graphs of SSA form  programs necessarily involve phi-functions at loop headers (see Theorem~\ref{theo:header}).
-% Thus, SESE counters can be represented by these phi-functions, as
-% Definition~\ref{def:sese} formalizes:
-
-% %\begin{definition}[SESE Counter]
-% %  \label{def:sese}
-% %  Considering a loop $L$ and its induced data flow graph $G$,\\
-% %  a statement $S_v:v=op_v(\ldots)$ is a \textit{SESE Counter} iff\begin{itemize}
-% %    \item $op_v$ is a PHI-node,
-% %    \item $op_v$'s arguments for blocks in $L$ are non-constant,
-% %    \item there is a circuit in $G$ containing $S_v$,
-% %    \item for every statement $S$ in a circuit in $G$ containing $S_v$:\begin{itemize}
-% %            \item $S$ is a phi-node or a constant increment,
-% %            \item if $S$ is a phi-node (except $S_v$), every incoming value is a variable defined in $L$, and
-% %            \item if $S$ is a constant increment, it is control-equivalent with the other increments.
-% %          \end{itemize}
-% %    \item and the total increment is not 0.
-% %  \end{itemize}
-% %\end{definition}
-
-% \begin{definition}[SESE Counter]
-%   \label{def:sese}
-%   Let $L$ be a reducible loop with header $h$ within a CFG $G$.
-%   A phi-function $v_0 = \phi(\ldots)$ in $h$ is a SESE counter if, and only if,
-%   any circuit $(v_0, v_1, \ldots, v_n, v_0)$ in the dependence graph $D$ induced by
-%   $L$ is such that:
-%   \begin{enumerate}
-%     \item For any $v_i, 1 \leq i \leq n$, either $v_i = u + c$ or $v_i = \phi(\ldots)$.
-%     \item If $v_i = u_i + c_i$ is an instruction at $\ell_i \in L$ and $v_j = u_j + c_j$ is another instruction at $\ell_j \in L$, then
-%           $(\ell_i, \ell_j)$ forms a SESE region.
-%   \end{enumerate}
-% \end{definition}
-
-% \begin{example}
-%   \label{ex:circuit}
-%   The program in Figure~\ref{fig:count_zeros_src} contains two SESE Counters.
-%   The CFG in Figure~\ref{fig:nonInstrumentedCFG} shows the two corresponding
-%   phi-functions: $\mathtt{i1} =\phi(\mathtt{i0}, \mathtt{i2})$ and
-%   $\mathtt{sum1} =\phi(\mathtt{sum0}, \mathtt{sum3})$.
-%   Figure~\ref{fig:examplesSESECounters} shows the induced dependence graphs
-%   that contain these two phi-functions.
-%   These graphs are induced by blocks \texttt{L2}, \texttt{L6}, \texttt{L9}
-%   and \texttt{LA} in Figure~\ref{fig:nonInstrumentedCFG}
-% \end{example}
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/examplesSESECounters}
-%   \caption{
-%     (a) The SESE Counter associated with instruction
-%     $\mathtt{i1} =\phi(\mathtt{i0}, \mathtt{i2})$ in
-%     Figure~\ref{fig:nonInstrumentedCFG}.
-%     (b) The SESE Counter associated with instruction
-%     $\mathtt{sum1} =\phi(\mathtt{sum0}, \mathtt{sum3})$.
-%   }
-%   \label{fig:examplesSESECounters}
-% \end{figure}
-
-% SESE counters must be associated with at least one increment
-% (see Theorem~\ref{theo:inc}).
-% The two SESE Counters in Example~\ref{ex:circuit} are, each, associated with
-% exactly one increment.
-% However, SESE counters can be associated with multiple increments, as long as
-% they are all control equivalent (as per Definition~\ref{def:reg}).
-% Therefore, if a SESE counter is associated with multiple increments, they must
-% belong into the same circuit.
-% From this fact, we arrive at the essential property of SESE counters:
-% once the loop that contains a SESE counter terminates, the value stored in
-% this counter holds enough information to infer how often any edge in the
-% circuit was traversed.
-% Example~\ref{ex:nonSESE} clarifies this fact showing a circuit that is not a
-% SESE counter.
-
-% \begin{example}
-%   \label{ex:nonSESE}
-%   Function \texttt{nonSESE}, in Figure~\ref{fig:nonSESE} returns the same value
-%   as Function \texttt{count\_zeros} in Figure~\ref{fig:count_zeros_src}.
-%   However, whereas variable \texttt{sum} is a SESE counter in
-%   Figure~\ref{fig:count_zeros_src}, this is not the case in
-%   Figure~\ref{fig:nonSESE}.
-%   To see why, Figure~\ref{fig:exampleNonSESE}(a) shows the CFG of function
-%   \texttt{nonSESE}.
-%   Figure~\ref{fig:exampleNonSESE}(a) shows the dependence graph induced by CFG's
-%   loop that contains $\mathtt{sum1} =\phi(\mathtt{sum0}, \mathtt{sum4})$.
-%   This dependence graph contains two affine increments.
-%   These increments define variables \texttt{sum2} and \texttt{sum3}, at blocks
-%   \texttt{L6} and \texttt{LA}.
-%   These blocks do not form a SESE region: the cycle $(\mathtt{L2}, \mathtt{L6}, \mathtt{LB}, \mathtt{L2})$ does not contain \texttt{LA}.
-%   Consequently, \texttt{sum1} can be incremented along two different circuits,
-%   which Figure~\ref{fig:exampleNonSESE}(b) shows.
-%   Hence, once the loop terminates, the value stored in \texttt{sum1} cannot be
-%   used to recover the frequency count of CFG edges along any of these circuits.
-% \end{example}
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/nonSESE}
-%   \caption{
-%     A new---rather artificial---implementation of the program in
-%     Figure~\ref{fig:count_zeros_src}.}
-%   \label{fig:nonSESE}
-% \end{figure}
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/exampleNonSESE}
-%   \caption{
-%     (a) The control-flow graph of the program in Figure~\ref{fig:nonSESE}.
-%     (b) The dependence graph that contains
-%     $\mathtt{sum1} =\phi(\mathtt{sum0}, \mathtt{sum4})$.
-%     This phi-function is not a SESE counter.}
-%   \label{fig:exampleNonSESE}
-% \end{figure}
-
-% % Describe the analysis to track and find the affine variables.
-% \subsection{Replacing KS Counters with SESE Counters}
-% \label{sub:usage}
-
-% A SESE counter $c_s$ replaces one KS counter $c_k$ at every exit
-% point of the loop $L$ that contains $c_s$.
-% This observation follows from Theorem~\ref{theo:replacement}.
-% Notice that multiple SESE counters can share the same circuit.
-% In this case, only one of them is necessary to replace the KS counter.
-% If $v_s = \phi(v_0, \ldots, v_n)$ is a SESE counter at header $h$ in loop $L$,
-% then we build a frequency counter for $L$ using the two steps below, which
-% Example~\ref{ex:replacement} illustrates:
-
-% \begin{enumerate}
-%   \item Save the incoming value $v_{\mathtt{init}}$ of $v$ at every block that
-%         reaches $h$.
-%   \item At $L$'s exit blocks, store the value
-%         $(v - v_{\mathtt{init}})/\mathtt{step}$, where \texttt{step} is the sum of
-%         constant increments along the circuit that contains $v$.
-% \end{enumerate}
-
-% \begin{example}
-%   \label{ex:replacement}
-%   Figure~\ref{fig:first_occurrence}(a) shows a program that finds the first
-%   position, within an array \texttt{v} that contains a variable \texttt{q},
-%   up to position \texttt{N}.
-%   Figure~\ref{fig:first_occurrence}(b) shows the same program, this time
-%   instrumented with code to store the value of the SESE counter associated with
-%   variable \texttt{p}.
-%   Notice that \texttt{p} is a SESE counter, in spite of having a pointer type.
-%   This pointer contains enough information to infer the number of iterations of
-%   the loop, once this loop terminates.
-% \end{example}
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/first_occurrence}
-%   \caption{
-%     (a) Program that finds address of first occurrence of a value within an array.
-%     (b) Version of \texttt{first\_occurrence} instrumented with a SESE counter.}
-%   \label{fig:first_occurrence}
-% \end{figure}
-
-% \subsection{Properties of SESE Counters}
-% \label{sub:prop}
-
-% This section states a few properties of SESE counters.
-% Theorems~\ref{theo:header}, \ref{theo:inc}, \ref{theo:same} and~\ref{theo:replacement} deal with structural properties of SESE counters.
-% These theorems support Theorem~\ref{theo:semantics}, which ensures that a SESE
-% counter contains enough information to replace one KS counter in an instrumented
-% program.
-
-% \begin{theorem}
-%   \label{theo:header}
-%   If a variable defined outside a loop is incremented within it, then this variable
-%   is also defined by a phi-function in the loop header
-% \end{theorem}
-
-% \begin{small}
-%   \begin{quotation}
-%     Follows from \citet{Cytron91}'s iterated dominance criterion, which causes
-%     a phi-function to exist at any point reached by two definitions of a variable
-%     name.
-%     The header is reached by the definition outside the loop, and by at least one
-%     definition inside the loop (the increment).
-%     $\Box$
-%   \end{quotation}
-% \end{small}
-
-% \begin{theorem}
-%   \label{theo:inc}
-%   A SESE counter is associated with at least one increment.
-% \end{theorem}
-
-% \begin{small}
-%   \begin{quotation}
-%     Item 1 of Definition~\ref{def:sese} states that the circuit forming a SESE
-%     counter contains either phi-functions or increments.
-%     Increments create new definitions of variables; phi-functions emerge to ensure
-%     that these definitions meet the SSA-form property.
-%     Thus, without increments, there would be no need for phi-functions, and,
-%     consequently, there would exist no phi-function at the loop header.
-%     $\Box$
-%   \end{quotation}
-% \end{small}
-
-% \begin{theorem}
-%   \label{theo:same}
-%   If $v = \phi(v_0, v_1, \ldots, v_n)$ is a SESE counter in a loop $L$, then every
-%   argument of the phi-function defined within $L$ must be the same.
-% \end{theorem}
-
-% \begin{small}
-%   \begin{quotation}
-%     A SESE counter's circuit contains only increments or other phi-functions.
-%     If different arguments reach the phi-function, then they must be defined by
-%     different increments (same argument used in Theorem~\ref{theo:inc}).
-%     In this case, $v$ would be part of different circuits containing increments,
-%     and Item 2 of Definition~\ref{def:sese} would not be true.
-%     $\Box$
-%   \end{quotation}
-% \end{small}
-
-% \begin{theorem}
-%   \label{theo:replacement}
-%   A SESE counter $c_s$ replaces exactly one KS counter $c_k$ within the loop
-%   $L$ that contains $c_s$.
-% \end{theorem}
-
-% \begin{small}
-%   \begin{quotation}
-%     The SESE counter $c_s$ exists in a circuit within $L$.
-%     This circuit must contain at least one KS counter $c_s$, for
-%     \citeauthor{Knuth73}'s minimum spanning tree includes at most $n-1$ of its $n$
-%     edges.
-%     The circuit cannot contain more than one KS counter; otherwise, the second
-%     counter would break minimality of the minimum spanning tree.
-%     $\Box$
-%   \end{quotation}
-% \end{small}
-
-% \begin{theorem}
-%   \label{theo:semantics}
-%   Let $v_s$ be a SESE counter that corresponds to a KS counter $c_k$ within a loop
-%   $L$.
-%   Let \texttt{init} be the value of $v_s$ before entering the loop;
-%   \texttt{last} be the value of $v_s$ after exiting the loop; and
-%   \texttt{step} be the sum of constant increments in the SESE circuit.
-%   At loop exit, $c_k = (\mathtt{last} - \mathtt{init})/\mathtt{step}$.
-% \end{theorem}
-
-% \begin{small}
-%   \begin{quotation}
-%     From Theorem~\ref{theo:replacement}, we have that $c_k$ is updated whenever
-%     the SESE circuit is traversed.
-%     From this observation, the proof of the current theorem follows by induction on
-%     the number of iterations of the SESE circuit.
-%     If the circuit runs 0 times, then $c_k = 0$.
-%     But $\mathtt{init} = \mathtt{last}$, and the SESE counter is also zero.
-%     Assume that the theorem holds up to $n-1$ iterations of the circuit.
-%     Let $\mathtt{last}^{n-1}$ be the value of $v_s$ at that iteration.
-%     We have that
-%     $c_k = (\mathtt{last}^{n-1} - \mathtt{init})/\mathtt{step}$ by the induction
-%     hypothesis.
-%     If the circuit iterates once more, then
-%     $c_k + 1 = ((\mathtt{last}^{n-1}+\mathtt{step}) - \mathtt{init})/\mathtt{step}$.
-%     Thus $c_k + 1 = (\mathtt{last}^n - \mathtt{init})/\mathtt{step}$
-%     $\Box$
-%   \end{quotation}
-% \end{small}
-
-% \section{Experimental Evaluation}
-% \label{sec:eval}
-
-% % Introduce the research questions
-% This section evaluates the following research questions:
-
-% \begin{description}
-%   \item [RQ1:] What is the overhead, in terms of time and space, of exact profiling done
-%         via \citet{Knuth73}'s instrumentation?
-%   \item [RQ2:] How prevalent are SESE counters in C/C++ programs present in either
-%         typical benchmark suites or mined from open-source repositories?
-%   \item [RQ3:] How much overhead can be saved on top of the base cost of
-%         \citet{Knuth73}'s instrumentation, via the techniques introduced in this paper?
-% \end{description}
-
-% \paragraph{Hardware}
-% Experiments evaluated in this section were performed on an AMD Ryzen 7 4800HS with a Radeon Graphics CPU, featuring 7.5GB of RAM and two 256 KiB L1
-% caches.
-
-% \paragraph{Software}
-% The experimental setup runs on Linux Ubuntu 22.04.2 LTS.
-% Instrumentation is implemented in LLVM 17.0.0 (stable release).
-% To count instructions, we use \texttt{CFGGrind}~\cite{Rimsa21}\footnote{Available at \url{https://github.com/rimsa/CFGgrind}}, a plugin for \texttt{Valgrind} 3.21.0
-% (commit from June 2nd, 2023).
-
-% \paragraph{Benchmarks}
-% This paper uses the following benchmarks:
-
-% \begin{description}
-%   \item [Jotai:] a collection formed by 950 programs from the \texttt{Jotai}\footnote{Taken from \url{https://github.com/lac-dcc/jotai-benchmarks} on June 2023.} collection.
-%         Each program contains a single function, which does not call other functions.
-%         Each function contains at least one loop.
-%         This codebase has been mined from open-source repositories.
-%         Inputs for the benchmarks were produced via fuzzing.
-%         In spite of fuzzing, none of these programs runs into undefined behavior,
-%         as far as \texttt{Frama-C}~\cite{Baudin21} is able to detect.
-%   \item [LLVM-TS:] The LLVM test suite: a collection of 134 programs
-%         available as part of the LLVM compilation infrastructure.
-% \end{description}
-
-% \subsection{RQ1 -- The Baseline Overhead}
-% \label{sub:baseline}
-
-% % Briefly introduce the research question:
-% The core instrumentation algorithm proposed by \citet{Knuth73}, here implemented
-% following \citet{Ball94}'s specification, imposes an overhead onto
-% profiled programs: the cost of loading, incrementing and storing counters.
-% This section gauges this overhead along two dimensions: the extra {\em time} necessary
-% to run instrumented programs, and the extra {\em space} that counters occupy in the
-% binary code.
-
-% % Describe the methodology.
-% \paragraph{Methodology--Time}
-% We report time overhead in two ways.
-% First, we use CFGGrind to count the total number of instructions fetched by the
-% processor during the execution of non-instrumented and instrumented programs.
-% Second, we measure the running time of original and instrumented programs.
-% For each of these two experiments we use different benchmarks.
-% When counting fetched instructions, we use \texttt{Jotai}.
-% We restrict this analysis to \texttt{Jotai} programs because it is easy to filter instructions per function via \texttt{CFGGrind}: each benchmark consists of a
-% single function that does not call library functions.
-% In other words, every instruction from call to return of the benchmark function
-% is ``visible''~\cite{Alvares21} to \texttt{Valgrind+CFGGrind}.
-% When timing programs, we use only \texttt{LLVM-TS} because these programs are
-% larger, and run for a longer time; hence, time variance is smaller than in
-% \texttt{Jotai}.
-
-% \paragraph{Methodology--Space}
-% We measure ``static'' and ``dynamic'' space.
-% Static space is measured as the size, in bytes, that \texttt{clang} produced for
-% each program, at the \texttt{-O0} optimization level.
-% Dynamic space is measured via \texttt{CFGGrind}, as number of different x86
-% instructions visited during the execution of programs.
-% In the former case, we consider the two benchmark collections:
-% \texttt{Jotai} and \texttt{LLVM-TS}.
-% In the latter, only \texttt{Jotai}, for the reasons explained in the previous
-% paragraph.
-
-% % Discuss the experimental results.
-% \paragraph{Discussion--Time}
-% The right boxes in Figures~\ref{fig:TFData}~and~\ref{fig:JotaiData} compare the running
-% time of original and instrumented programs.
-% Instrumentation happens either via \citeauthor{Knuth73} (KS) counters, or via SESE counters.
-% However, this section focuses on the impact of standard (KS-based)
-% instrumentation.
-% Section~\ref{sub:performance} will discuss the overhead of SESE counters.
-% On average (Median in Figure~\ref{fig:JotaiData}--bottom right box), KS counters
-% increase the number of instructions fetched during the execution of \texttt{Jotai} benchmarks by 18.9\%.
-% This number has no variance: we are counting the discrete number of instructions
-% fetched during the execution of programs.
-% In the worst case across all the 949 \texttt{Jotai} benchmarks, the number of fetched instructions increased by 119\%.
-% Considering running time, the \texttt{LLVM-TS} programs instrumented with KS counters
-% run for approximately 817 seconds, compared to 648 seconds without any instrumentation.
-% The median (Median of running time in Figure~\ref{fig:TFData}--bottom right box)
-% slowdown caused by instrumentation was 1.3\%.
-% However, although this number seems low in principle, pathological cases are possible.
-% For instance, one of the benchmarks in the LLVM test suite, \texttt{Ptrdist/ks},
-% runs for 1.13 seconds without instrumentation, whereas its instrumented version
-% (using KS counters only) runs for 6.5 seconds (average of three samples).
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/TFData}
-%   \caption{
-%     The overhead of exact profiling on 135 programs in the LLVM test suite.
-%     The two boxes on the left refer to the size of the programs, in number of
-%     LLVM instructions.
-%     The two boxes on the right refer to the running time of programs, in
-%     seconds.
-%     The upper boxes show absolute numbers; the lower boxes
-%     show ratios.
-%     Numbers within boxes are medians.}
-%   \label{fig:TFData}
-% \end{figure}
-
-% \paragraph{Discussion--Space}
-% Figures~\ref{fig:TFData}~and~\ref{fig:JotaiData} compare original and instrumented programs in terms of
-% binary size.
-% In regards to the LLVM test suite, KS counters increase the size of
-% programs by 15.3\% (Median in Figure~\ref{fig:TFData}--bottom left box).
-% The growth observed in the \texttt{Jotai} program is larger: the median number of x86
-% instructions fetched for the original benchmark functions is 37, versus 57 once
-% KS counters are in place: a median growth of 43.9\%.
-% Nevertheless, we remind the reader that \texttt{Jotai} functions are much smaller than
-% the benchmarks in the LLVM test suite: in this case, each benchmark consists of a
-% single function, that does not call other functions.
-% Each function does come with a driver that generates inputs for it; however,
-% Figure~\ref{fig:JotaiData} does not consider the counters inserted in the driver.
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/JotaiData}
-%   \caption{
-%     Analysis of x86 instructions visited and fetched during the execution of
-%     949 \texttt{Jotai} programs, as reported by \texttt{CFGGrind}.
-%     The two boxes on the left refer to the number of {\it instruction
-%         addresses} visited during execution.
-%     The more instruction addresses are visited, the larger the path of executed
-%     code.
-%     The two boxes on the right refer to the total number of instructions fetched
-%     during the execution of programs.
-%     The more instructions are fetched, the longer the program runs.
-%     Numbers in boxplots are medians.}
-%   \label{fig:JotaiData}
-% \end{figure}
-
-% \subsection{RQ2 -- The Prevalence of SESE Counters}
-% \label{sub:prevalence}
-
-% The replacement of KS Counters with SESE counters is meaningful inasmuch as SESE
-% counters are common structures in code.
-% Intuitively, such should be the case, for SESE counters include the basic induction
-% variables that control the trip count of loops.
-% Indeed, basic induction variables are the main source of SESE counters, as this
-% section reports.
-
-% \paragraph{Methodology}
-% We report the number of SESE counters in the \texttt{Jotai} collection.
-% We restrict this analysis to \texttt{Jotai} for convenience: in contrast to
-% the programs in \texttt{LLVM-TS}, each \texttt{Jotai} benchmark is formed by
-% a single C file; thus, it is simple to report cumulative data per benchmark.
-% To give the reader some perspective on the number of SESE counters, this
-% section also reports the number of reducible loops per benchmark (see
-% Definition~\ref{def:loop}).
-% However, notice that these two quantities---number of reducible loops and
-% number of SESE counters---are not directly comparable.
-% A SESE counter is a program variable, whose semantics (initialization and
-% updates) must be implemented via several LLVM instructions; a loop is a control-flow
-% construct, who implementation requires also multiple LLVM instructions.
-
-% \begin{figure}[t]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/CumulationDistribution}
-%   \caption{Cumulative distribution of number of loops and counters found
-%     across 525 source files in the LLVM test suite.}
-%   \label{fig:CumulationDistribution}
-% \end{figure}
-
-% \paragraph{Discussion}
-% Figure~\ref{fig:CumulationDistribution} shows four cumulative distributions:
-% number of loops; number of KS counters; number of possible SESE counters; and number of SESE counters used for the instrumentation.
-% We remind the reader that the number of KS counters is the number of edges in the
-% complement of the minimum spanning tree of a program's CFG.
-% The relation between number of loops and number of SESE counters is clear.
-% In general, we find one SESE counter per program loop.
-% The Pearson Coefficient relating these two quantities is 0.98, indicating
-% strong correlation.
-% Nevertheless, a program might contain slightly more SESE counters than loops.
-% For instance, the program in Figure~\ref{fig:count_zeros_src} contains one loop and
-% two SESE counters.
-% However, not all these counters can be used to replace KS counters, for some of them
-% might cover the same circuit within a control-flow graph.
-% There are also loops that do not feature SESE counters, simply because they do
-% not contain affine variables.
-% Example~\ref{ex:nonAffine} shows two instances of such loops taken from the same
-% benchmark.
-
-% \begin{example}
-%   \label{ex:nonAffine}
-%   Figure~\ref{fig:ReadNetList} shows code snippets of two functions taken from a
-%   C file in the LLVM test suite (\texttt{Ptrdist/ks/} \texttt{KS-1.c}).
-%   Each function contains an outermost loop whose induction variable forms up a SESE
-%   counter, and an innermost loop that has no SESE counters.
-%   Incidentally, this benchmark, \texttt{Ptrdist/ks} accounts for one of the heaviest
-%   slowdowns that we have observed.
-%   The original program runs for 1.13 sec; the program with KS counters takes 6.49 secs;
-%   and the program with SESE counters take 5.34 secs.
-% \end{example}
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/ReadNetList}
-%   \caption{Examples of loops with SESE counters (outermost loops) and without them
-%     (innermost loops).}
-%   \label{fig:ReadNetList}
-% \end{figure}
-
-% \subsection{RQ3 -- Overhead Reduction}
-% \label{sub:performance}
-
-% % Briefly introduce the research question:
-% SESE counters reduce the overhead of exact profiling, for they allow removing
-% some instrumentation from programs.
-% Therefore, once SESE counters are used to collect profile data, the overhead that
-% remains after instrumentation is due to the counters left in the
-% target program, plus the overhead to store SESE counters at the exit point
-% of loops.
-% This section measures this overhead, contrasting it with the numbers that
-% Section~\ref{sub:baseline} reports for the cost of the standard instrumentation
-% of \citeauthor{Knuth73}.
-% In this regards, this section adopts the same methodology seen in
-% Section~\ref{sub:baseline}.
-
-% % Discuss the experimental results.
-% \paragraph{Discussion--Time}
-% Figure~\ref{fig:JotaiData} shows that SESE counters raise the number
-% of instructions fetched during the execution of \texttt{Jotai} program by
-% 11.4\%
-% (Median across 950 benchmarks--lower right box in Figure~\ref{fig:JotaiData}).
-% Contrasting these numbers with those presented in Section~\ref{sub:baseline}, we see
-% that SESE counters reduce the overhead of exact instrumentation from 18.9\% to 11.4\%.
-% These numbers find similar counterparts once absolute running time is considered.
-% As Figure~\ref{fig:TFData} illustrates, SESE counters increase the median execution
-% time of programs in the LLVM test suite from 0.973 seconds to 1.081 seconds, whereas
-% KS counters alone increase it to 1.131 seconds.
-% If we consider medians of ratios, then SESE counters bring virtually
-% no overhead (Figure~\ref{fig:TFData}--lower right box).
-% However, these ratios must be considered with care: most programs in the LLVM test
-% suite run for short time, and running time has variance.
-% Thus, we believe that the experiments with \texttt{Jotai} benchmarks bring a better
-% idea of the overhead of instrumentation, be it using KS counters only, or also using
-% SESE counters.
-
-% \paragraph{Discussion--Space}
-% The memory consumption benefits gained from SESE counters mirror the advantages
-% that SESE counters bring to running time.
-% Figure~\ref{fig:JotaiData} compares the size of programs instrumented
-% through standard KS counters and with the support of SESE counters.
-% In total, when running the \texttt{Jotai} programs, we observe that 48,217
-% different x86 instructions are fetched for the original (non-instrumented) codes;
-% 66,960 instructions are fetched for codes instrumented with standard KS
-% counters, and 70,331 instructions are fetched once SESE counters are
-% considered.
-% Overall, SESE counters increase the number of instructions fetched per program
-% by 51.1\% (Median across 950 programs--lower left box in Figure~\ref{fig:JotaiData}),
-% whereas standard instrumentation causes 43.9\% more instructions to be fetched.
-% Therefore, programs instrumented with SESE counters are not necessarily
-% smaller: they still contain code to store the value of profiling facts.
-% However, this code is moved outside loops.
-% If we consider the size of binary executables, in bytes, as Figure~\ref{fig:TFData}
-% shows, then we observe that while programs instrumented with KS counters are
-% 15.3\% larger than the original codes (lower left box in Figure~\ref{fig:TFData}),
-% programs instrumented with SESE counters are 15.8\% larger.
-
-% \subsection{Summary of Results}
-% \label{sub:summary}
-
-% Figure~\ref{fig:SummaryData} summarizes the data discussed in this section.
-% A few conclusions can be drawn from this table.
-% First, SESE counters reduce the overhead of \citeauthor{Knuth73}'s optimal
-% instrumentation.
-% Reduction is observed regardless of the metric: number of x86 instructions
-% fetched or running time.
-% Reduction is also observed regardless of the summarization methodology:
-% absolute number or median.
-
-% \begin{figure}[H]
-%   \centering
-%   \includegraphics[width=.5\columnwidth]{images/SummaryData}
-%   \caption{Summary of data discussed in this section.}
-%   \label{fig:SummaryData}
-% \end{figure}
-
-% On the other hand, SESE counters do not reduce code size.
-% Rather, we observe a slight increase in size, when SESE counters are used to
-% replace KS counters.
-% This growth is very small, and it is due to the extra instructions necessary to
-% compute the value of a KS counter from a SESE counter.
-% In this case, some arithmetic operations are necessary to rematerialize the
-% value of a KS counter, as explained in Section~\ref{sub:usage} (see
-% Example~\ref{ex:replacement}).
-% Notice that this growth is very small, and not always present.
-% In particular, when experimenting with the LLVM test suite, we have observed that
-% although the median size of executables grew (from 10,500 bytes with KS
-% counters to 10,536 bytes with SESE counters), the sum of all the binaries did
-% not (5,736 $\times 10^3$ bytes with KS counters vs 5,713 $\times 10^3$ bytes
-% with SESE counters).
-
-% \section{Related Work}
-% \label{sec:rw}
-
-% This section covers different profiling techniques, and explains how this work
-% differs from these previous approaches.
-% As already mentioned in Section~\ref{sec:intro}, profiling techniques can be roughly divided into exact and approximate approaches.
-% Although this paper concerns the former, this section mentions the latter briefly, to provide the reader with perspective on the applications of profiling.
-
-% \paragraph{Profile-Guided Code Optimizations}
-% The main usage of profile data is to support compilers to perform code
-% optimizations.
-% Several classic compiler optimizations, such as register allocation and inlining
-% benefit from such data.
-% Section 2 of \citet{Pohua91}'s work describe several examples of these
-% optimizations, and how they can be enhanced with a profiler's feedback.
-% Nowadays, profile data is commonly used to enable inlining decisions in
-% data-center applications~\cite{Chen16}; to support more accurate branch prediction strategies~\cite{Song22}; to realign code, so to improve
-% locality in the instruction cache~\cite{Panchenko19}; and to support more
-% informed prefetching decisions~\cite{Litz22}.
-
-% \paragraph{Approximate Profiling}
-% Approximate profiling can either be based on sampling or instrumentation.
-% Sampling is the method of choice in industrial-quality tools, such as AMD's \texttt{uProf}, Intel's \texttt{vTune}, GNU's \texttt{gprof}, Microsoft's \texttt{WPT}, or \texttt{HWPMC} (in the \texttt{FreeBSD 6.0} and above).
-% Approximate profiling via instrumentation is typically done in just-in-time compilers.
-% For instance, \citet{Sol11} explain how profiling is done in Mozilla's \texttt{SpiderMonkey}:
-% ``{\it Each conditional branch is associated with a counter initially set to zero. If the interpreter finds a conditional branch during program interpretation, then it increments the counter. The process of checking and incrementing counters is called, in \texttt{TraceMonkey}’s jargon, the monitoring phase}".
-% Notice that counters, in this case, are associated with branches---not with control-flow edges.
-% Thus, an exact program profile cannot be reconstructed from these counters only.
-% Nevertheless, there exists heuristics to estimate missing frequency counts in approximate profile data.
-% Examples include techniques from \citet{Wu94}, \citet{Levin08} and~\citet{He22}.
-% We emphasize that these approaches are {\it heuristics}: they are not guaranteed to reconstruct exact profile information from approximate data.
-
-% \paragraph{Exact Profiling}
-% The baseline instrumentation approach used in this paper is due to \citet{Knuth73}.
-% This algorithm has been independently discovered by \citet{Nahapetian73}; however, \citeauthor{Nahapetian73}'s work did not deal directly with programs.
-% His formulation was more abstract; namely, finding the minimum number of measurements necessary to determine the flow in a graph governed by Kirchhoff's Conservation Law.
-% Most of the modern formulation of exact profiling is due to \citet{Ball94}.
-% \citeauthor{Ball94} extends \citet{Knuth73}'s optimal algorithm to profile not only edges, but also paths within programs~\cite{Ball96}.
-% Still, optimality, be it in path, vertex or edge profiling, is bounded by the complement of the minimum spanning tree of the program's CFG, as originally proved by \citeauthor{Knuth73} and \citeauthor{Nahapetian73}.
-% As a consequence, \citeauthor{Knuth73}'s algorithm is nowadays part of mainstream
-% compilation infrastructures, such as LLVM\footnote{See \url{PGOInstrumentation_8cpp_source.html} (Aug 2nd 2023)} or
-% BOLT\footnote{See Line 333 of \url{https://github.com/llvm/llvm-project/blob/main/bolt/lib/Passes/Instrumentation.cpp} (Aug 2nd 2023)}.
-
-% There exist approaches to reduce the amount of counters necessary to instrument
-% programs in particular contexts.
-% For instance, if users are interested in only parts of a program, then
-% \citet{Ohmann16} has proposed heuristics to eliminate counters.
-% Achieving minimality in this scenario, nevertheless, seems unlikely: \citeauthor{Ohmann16} have shown that such problem is NP-complete.
-% Notice that \citeauthor{Ohmann16} worked on a related, but not equal, version of
-% the profiling problem: they were interested in determining binary coverage, i.e.:
-% whether a CFG edge is traversed or not.
-% In contrast to code profiling, binary coverage does not abide by
-% Kirchhoff's Conservation Law.
-% Thus, while \citeauthor{Knuth73}'s algorithm solves \citeauthor{Ohmann16}'s
-% problem, the opposite is not true.
-% Indeed, \citet{Probert82} has demonstrated that for structured
-% programs\footnote{\citeauthor{Probert82}'s work precedes \citeauthor{Johnson94}'s by more than one decade; hence, it uses a definition of ``Structured Program" based on a grammar of acceptable coding constructs, instead of relying on the notion of Single-Entry, Single-Exit regions, which is standard today.}, it is possible to use less counters than \citeauthor{Knuth73}'s algorithm, if only coverage, but not a complete frequency count is desired.
-
-% \paragraph{Counters and Classic Compiler Optimizations}
-% Except for that previous work related to code coverage~\cite{Probert82,Ohmann16}, we are not aware of other attempts to reduce the number of counters inserted by \citeauthor{Knuth73}'s algorithm.
-% However, the combination of scalarization and classic compiler optimizations can, in some scenarios, deliver results similar to those we obtain with SESE counters.
-% For instance, \citet{Ball96} mentions that counters should be kept in registers throughout the execution of loops.
-% Loads and stores are only necessary at entry and exit points of loops.
-% In the LLVM instrumentation framework, this optimization is called {\it counter promotion}\footnote{See \url{InstrProfiling_8cpp_source.html} (Aug 4th 2023)}.
-% If the loop's trip count is symbolic known (for instance, the loop has a single affine induction variable with invariant bounds), then LLVM's scalar evolution is able to remove the increments from the promoted counter, storing its final value only once.
-% As an example, LLVM, at the \texttt{-O2} optimization level, is able to replace the counter in block \texttt{LA} in Figure~\ref{fig:instrumentedCFG} with a single store of value \texttt{N} in block \texttt{LD}.
-% This optimization cannot remove the increments in block \texttt{L9}, or the counter increments within the loop in Figure~\ref{fig:first_occurrence}, as SESE counters do.
-% Nevertheless, notice that LLVM is not replacing a counter with a program variable: the counter is inserted, and then classic compiler optimizations mitigate its overhead.
-
-% \section{Conclusion}
-% \label{sec:conc}
-
-% This paper has introduced a technique to lower the overhead of the optimal instrumentation proposed by \citeauthor{Knuth73} in 1973.
-% Said technique consists in replacing some of the counters that \citeauthor{Knuth73}'s approach requires with variables whose values are an affine function of such counters.
-% Therefore, the proposed approach does not contradict \citeauthor{Knuth73}'s optimality result: an exact program profile still requires probing the complement of the minimum spanning tree of a control-flow graph.
-% However, some of these probes can be replaced with program variables.
-% Because these variables exist in loops, reusing them to avoid inserting counters in programs tends to be profitable.
-% Experimental results performed on many different programs show that often it is possible to reduce to virtually zero the overhead of obtaining exact profiles.
-% The techniques discussed in this paper have been implemented in LLVM v17.0, as free software (GPL 3.0).
-
-% \paragraph{Software}
-% The implementation of SESE counters used in this paper is available at
-% \url{https://github.com/lac-dcc/Nisse}.
-
-% \paragraph{Acknowledgement}
-% I want to thank Fernando for his supervision during this internship. I have learned a lot thanks to him, in theory and practice for static analysis and compilation, project management, and article writing. I also want to thank everybody in the Compilers Laboratory for their kind welcome, the scientific discussions all along my stay, and for the social events they organized during my stay. I hope we will have a chance to meet again, maybe in France.
-
-% \printbibliography
-
-% % \bibliographystyle{ACM-Reference-Format}
-% % \bibliography{references}
+\label{sec:ccl}
 
 \end{document}
