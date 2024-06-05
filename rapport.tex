@@ -21,6 +21,33 @@
 \usepackage{mathtools}
 \usepackage{float}
 \usepackage{color}
+\usepackage{listings,lstlangcoq}
+\usepackage{xcolor}
+\usepackage[all]{xy}
+
+\lstdefinestyle{customcoq}{
+  columns=flexible,
+  mathescape=true,
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  xleftmargin=\parindent,
+  language=Coq,
+  morekeywords={Variant, fun, Arguments, Type, cofix},
+  % morekeywords={SOCKAPI,ITREE,data_at,data_at_},
+  emph={%
+    SOCKAPI,ITree,data_at,data_at_
+  },
+  emphstyle={\bfseries\color{green!40!red!80}},
+  showstringspaces=false,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\bfseries\color{green!20!black},
+  commentstyle=\itshape\color{red!40!black},
+  identifierstyle=\color{violet!50!black},
+  stringstyle=\color{orange},
+  escapeinside={<@}{@>}
+}
+\newcommand{\inlinecoq}[1]{\mbox{\lstinline[style=customcoq,columns=fixed,basewidth=.48em]{#1}}}
+\newcommand{\ilc}[1]{\inlinecoq{#1}}
 
 \addbibresource{references.bib}
 
@@ -59,7 +86,6 @@
   {\large February 5th, 2024 - July 5th, 2024\par}
 \end{titlepage}
 
-
 \tableofcontents
 \newpage
 
@@ -82,9 +108,9 @@
 
 \paragraph{The Contribution of This Work}
 \begin{itemize}
-    \item \leon{Design d'un langage de patterns + Implémentation naive d'un matcher}
-    \item \leon{Preuve d'un théorème central pour prouver des optims (sur un CFG)}
-    \item \leon{Utiliser ce langage pour deux optims + preuves de correction}
+  \item \leon{Design d'un langage de patterns + Implémentation naive d'un matcher}
+  \item \leon{Preuve d'un théorème central pour prouver des optims (sur un CFG)}
+  \item \leon{Utiliser ce langage pour deux optims + preuves de correction}
 \end{itemize}
 \paragraph{Premier exemple: CCstP}
 
@@ -108,51 +134,453 @@
 
 \leon{utilité, coinduction, structure, mechanisme de preuve}
 
-\section{Le langage de patterns}
+\section{The pattern language}
 \label{sec:lang}
 
-\begin{itemize}
-  \item goal of section: define modular set of simple patterns that can capture optimizable subgraphs of an OCFG.
-  \item capture: have a function that, given a pattern and an ocfg, returns a/the subgraph(s) corresponding to the pattern's grammar.
+In this section we will:\begin{itemize}
+  \item Define a Domain Specific Language that can capture optimizable subgraphs in an OCFG\@.
+  \item Introduce a matcher on this language and the corresponding semantics of each constructor.
+  \item Present the Coq implementation of the language, matcher and semantics.
 \end{itemize}
 
-\subsection{présentation des patterns + utilité}
+\subsection{Defining the language}
+
+Our goal is to define a Domain Specific Language that can characterize optimizable subgraphs in an OCFG\@. To represent that language, we define an inductive datatype.
+
+\begin{figure}[h]
+  \label{fig:pat}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Inductive Pattern : Type -> Type :=
+    | Graph: Pattern ocfg
+    | When: forall  {S}, Pattern S -> (S -> bool) -> Pattern S
+    | Map: forall  {S} {T}, Pattern S -> (S -> T) -> Pattern T
+    | Focus: forall  {S}, Pattern S -> Pattern (ocfg * S)
+    | Block: forall  {S}, Pattern S -> Pattern (bid * blk * S)
+    | Head: forall  {S}, Pattern S -> Pattern (bid * blk * S)
+    | Branch: forall  {S}, Pattern S -> Pattern (bid * blk * S)
+  .
+  \end{lstlisting}
+  \caption{The \ilc{Pattern} datatype}
+\end{figure}
+
+Since the goal of a pattern in to capture a subgraph with a certain structure, the \ilc{Pattern} datatype has a type argument, which represents the return type of the pattern.\\
+Each constructor adds to the return types of the following constructors, with the base case \ilc{Graph} accepting any graph.
+
+We will now introduce each constructor and their function.
+
+\paragraph{\ilc{Graph}}
+
+The \ilc{Graph} constructor is the ``base'' case that matches any graph. It does not take any extra argument, and returns the graph given as argument.
+
+\paragraph{\ilc{When}}
+
+The \ilc{When} constructor allows adding a boolean condition to a pattern.
+It takes a pattern and a corresponding boolean function as argument, and returns what the patterns matched if it fulfils the condition.
+
+\paragraph{\ilc{Map}}
+
+The \ilc{Map} constructor allows mapping a function onto a pattern's return type.
+It takes a pattern and a function as argument, and returns the image of the function by what the patterns matched.
+
+\paragraph{\ilc{Focus}}
+
+The \ilc{Focus} constructor matches any subgraph.
+It takes a pattern as argument to match against the rest of the graph, and returns the matched subgraph and what the pattern matched.
+
+\paragraph{\ilc{Block}}
+
+The \ilc{Block} constructor matches any single block in the graph.
+It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.
+
+\paragraph{\ilc{Head}}
+
+The \ilc{Head} constructor matches any block of the graph without predecessors.
+It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.\\
+Note that this constructor could not be directly implemented as a \ilc{When \_ Block \_} since it depends on the rest of the graph, which \ilc{When} wouldn't have access to.
+
+\paragraph{\ilc{Branch}}
+
+The \ilc{Branch} constructor matches any block of the graph whose terminator is a conditional jump.
+It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.
+This constructor could be implemented as a \ilc{When \_ Block \_}, but has been implemented directly because \leon{???}.
 
 \leon{schéma pour chaque pattern}
 
-\leon{dire que head et branch sont déja des patterns ``optimizés'' $\rightarrow$ explications dans~\ref{sec:appr}}
+\subsection{Matcher functions}
 
-\begin{itemize}
-  \item Graph: Pattern ocfg
-  \item When: $\forall$ {S}, Pattern S $\rightarrow$ (S $\rightarrow$ bool) $\rightarrow$ Pattern S
-  \item Head: $\forall$ {S}, Pattern S $\rightarrow$ Pattern (bid * blk * S)
-  \item Focus: $\forall$ {S}, Pattern S $\rightarrow$ Pattern (ocfg * S)
-  \item Map: $\forall$ {S} {T}, Pattern S $\rightarrow$ (S $\rightarrow$ T) $\rightarrow$ Pattern T
-  \item Block: $\forall$ {S}, Pattern S $\rightarrow$ Pattern (bid * blk * S)
-  \item Branch: $\forall$ {S}, Pattern S $\rightarrow$ Pattern (bid * blk * S)
-\end{itemize}
+To use these patterns, we need to define a matcher function. That is, a function that takes a pattern and an OCFG as argument, and returns a subgraph, or each subgraph, that matches that pattern.
 
-\subsection{présentation de patterns/optims possibles (non implémentés)}
+We implemented the \ilc{MatchAll} function, which returns all the subgraphs corresponding to a given pattern.
 
-\leon{trouver optim avec map?}
+\begin{figure}[h]
+  \label{fig:fmapr}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Definition flat_map_r {A B C} (f : B -> list C) :=
+      fix flat_map_r (l : list (A*B)) : list (A*C) :=
+        match l with
+        | [] => []
+        | (a, b)::q => (map (fun c => (a, c)) (f b))++flat_map_r q
+    end.
+  \end{lstlisting}
+  \caption{The \ilc{flat_map_r} function}
+\end{figure}
+
+\begin{figure}[h]
+  \label{fig:match}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Fixpoint MatchAll {S} (P: Pattern S) (g: ocfg) : list S :=
+    match P with
+      | Graph => [g]
+      | When p f => filter (fun x => f x = true) (MatchAll p g) 
+      | Map p f => map f (MatchAll p g)
+      | Focus p => flat_map_r (MatchAll p) (focus g)
+      | Block p => flat_map_r (MatchAll p) (blocks g)
+      | Head p => flat_map_r (MatchAll p) (heads g)
+      | Branch p => flat_map_r (MatchAll p) (branches g)
+    end.
+  \end{lstlisting}
+  \caption{The \ilc{MatchAll} function}
+\end{figure}
+\noindent
+\ilc{MatchAll} relies heavily on the \ilc{flat_map_r} function, of type \ilc{forall {A B C}, (B -> list C) -> list (A * B) -> list (A * C)}.\\
+It applies the rest of the pattern to the right-hand side of what the current constructor's application returns.
+
+\ilc{flat_map_r} is characterized by the following lemma:
+\begin{figure}[h]
+  \label{fig:in_flat_map_r}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Lemma in_flat_map_r {A B C}:
+      forall (f:B->list C) (l:list (A*B)) (a:A) (c:C), (a,c) ∈ (flat_map_r f l) IFF
+      exists b, (a,b) ∈ l /\ c ∈ (f b).
+  \end{lstlisting}
+\end{figure}
+
+With this, we can have a correctness and completeness proof for applying MatchAll to each constructor.
+
+\paragraph{\ilc{Graph}}
+
+The following theorem shows that \ilc{MatchAll} correctly identifies the \ilc{Graph} pattern.
+
+\begin{figure}[h]
+  \label{fig:sem_graph}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Theorem Pattern_Graph_correct: forall G G', G' ∈ (MatchAll Graph G) IFF G' = G.
+  \end{lstlisting}
+\end{figure}
+
+The proof is immediate from unfolding the definition of \ilc{MatchAll Graph}.
+
+\paragraph{\ilc{When}}
+
+The following theorem shows that \ilc{MatchAll} correctly identifies the \ilc{When} pattern.
+
+\begin{figure}[H]
+  \label{fig:sem_when}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Theorem Pattern_When_correct {S}:
+      forall (P: Pattern S) f X G,
+      X ∈ (MatchAll (When P f) G) IFF f X = true /\ X ∈ (MatchAll P G).
+  \end{lstlisting}
+\end{figure}
+
+The proof is immediate from the lemma \ilc{elem_of_list_filter} given by the \ilc{stdpp} library:
+
+\begin{figure}[H]
+  \label{fig:list_filter}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    elem_of_list_filter :
+      forall {A : Type} (P : A -> Prop) {H : forall x : A, Decision (P x)} (l : list A) (x : A),
+      x ∈ filter P l IFF P x /\ x ∈ l
+  \end{lstlisting}
+\end{figure}
+
+\paragraph{\ilc{Map}}
+
+The following theorem shows that \ilc{MatchAll} correctly identifies the \ilc{Map} pattern.
+
+\begin{figure}[H]
+  \label{fig:sem_when}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Theorem Pattern_Map_correct {S T}:
+      forall (P: Pattern S) (f: S -> T) X G,
+      X ∈ (MatchAll (Map P f) G) IFF exists y, X = f y /\ y ∈ (MatchAll P G).
+  \end{lstlisting}
+\end{figure}
+
+The proof is immediate from the lemma \ilc{elem_of_list_fmap} given by the \ilc{stdpp} library:
+
+\begin{figure}[H]
+  \label{fig:list_fmap}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    elem_of_list_fmap :
+      forall {A B : Type} (f : A -> B) (l : list A) (x : B),
+      x ∈ map f l IFF exists y : A, x = f y /\ y ∈ l
+  \end{lstlisting}
+\end{figure}
+
+\paragraph{\ilc{Focus}}
+
+\ilc{MatchAll} relies on the \ilc{focus} function to match the \ilc{Focus} constructor.
+
+\begin{figure}[H]
+  \label{fig:fun_focus}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Fixpoint focus_rec l (g1 g2: ocfg) :=
+      match l with
+      | [] => [(g1, g2)]
+      | (id,b)::q => focus_rec q g1 g2 ++ focus_rec q (delete id g1) (<[id:=b]> g2)
+    end.
+
+    Definition focus (G: ocfg) := focus_rec (map_to_list G) G void1.
+  \end{lstlisting}
+\end{figure}
+
+The semantic of \ilc{Focus} is characterized by the following definition:
+
+\begin{figure}[H]
+  \label{fig:sem_focus_def}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Record focus_sem (G G1 G2: ocfg): Prop := {
+      SUB1: G1 ⊆ G;
+      SUB2: G2 ⊆ G;
+      PART: G1 ## G2;
+      CUP: G1 ∪ G2 = G
+    }.
+  \end{lstlisting}
+\end{figure}
+
+The correctness of \ilc{MatchAll} for \ilc{Focus} is proven by the following theorem:
+
+\begin{figure}[H]
+  \label{fig:sem_focus}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Theorem Pattern_Focus_correct {S}:
+      forall (G G1: ocfg) (P:Pattern S) X, 
+        (G1, X) ∈ (MatchAll (Focus P) G) IFF
+        exists G2, focus_sem G G1 G2 /\ X ∈ (MatchAll P G2).
+  \end{lstlisting}
+\end{figure}
+
+The proof of \ilc{Pattern_Focus_correct} relies on the following lemma, which has not been proven:
+
+\begin{figure}[H]
+  \label{fig:focus_cor}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Lemma focus_correct: forall G, forall G1 G2, (G1, G2) ∈ (focus G) IFF focus_sem G G1 G2.
+  \end{lstlisting}
+\end{figure}
+
+\paragraph{\ilc{Block}}
+
+\ilc{MatchAll} relies on the \ilc{blocks} function to match the \ilc{Block} constructor:
+
+\begin{figure}[H]
+  \label{fig:blocks_fun}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Definition blocks_aux (G: ocfg) : (bid*blk) -> (bid*blk*ocfg) :=
+      fun '(id, b) => (id, b, delete id G).
+
+    Definition blocks (G: ocfg): list (bid*blk*ocfg) :=
+      map (blocks_aux G) (map_to_list G).
+  \end{lstlisting}
+\end{figure}
+
+The semantic of \ilc{Block} is characterized by the following definition:
+
+\begin{figure}[H]
+  \label{fig:sem_block_def}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Record blocks_aux_sem (G0 G G': ocfg) id b : Prop := 
+      {
+        EQ: G' = delete id G0;
+        IN: G !!  id = Some b
+      }.
+
+    Definition blocks_sem (G G': ocfg) id b := blocks_aux_sem G G G' id b.
+  \end{lstlisting}
+\end{figure}
+
+The correctness of \ilc{MatchAll} for \ilc{Block} is proven by the following theorem:
+
+\begin{figure}[H]
+  \label{fig:sem_block}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Theorem Pattern_Block_correct {S}:
+      forall (G: ocfg) (P: Pattern S) id (b:blk) X,
+      (id, b, X) ∈ MatchAll (Block P) G IFF
+      exists G', blocks_sem G G' id b /\ X ∈ MatchAll P G'.
+  \end{lstlisting}
+\end{figure}
+
+The proof of \ilc{Pattern_Block_correct} relies on the following lemmas:
+
+\begin{figure}[H]
+  \label{fig:block_cor}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Lemma blocks_aux_correct: forall G G0 G' id b, 
+      (id, b, G') ∈ map (blocks_aux G0) (map_to_list G) IFF blocks_aux_sem G0 G G' id b.
+
+    Lemma blocks_correct: forall G G' id b,
+      (id, b, G') ∈ blocks G IFF blocks_sem G G' id b.
+  \end{lstlisting}
+\end{figure}
+
+\paragraph{\ilc{Head}}
+
+\ilc{MatchAll} relies on the \ilc{heads} function to match the \ilc{Head} constructor:
+
+\begin{figure}[H]
+  \label{fig:heads_fun}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Definition is_empty (S: gset bid) := decide (S = ∅).
+
+    Definition heads_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
+      if is_empty (predecessors id G)
+      then (id, b, delete id G)::acc
+      else acc.
+
+    Definition heads (G: ocfg): list (bid*blk*ocfg) := map_fold (heads_aux G) [] G.
+  \end{lstlisting}
+\end{figure}
+
+The semantic of \ilc{Head} is characterized by the following definition:
+
+\begin{figure}[H]
+  \label{fig:sem_block_def}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Record heads_aux_sem (G0 G G': ocfg) id b := {
+      EQ: G' = delete id G0;
+      IN: G !! id = Some b;
+      PRED: predecessors id G0 = ∅
+    }.
+
+    Definition heads_sem (G G':ocfg) (id:bid) b := heads_aux_sem G G G' id b.
+  \end{lstlisting}
+\end{figure}
+
+The correctness of \ilc{MatchAll} for \ilc{Head} is proven by the following theorem:
+
+\begin{figure}[H]
+  \label{fig:sem_block}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Theorem Pattern_Head_correct {S}:
+      forall (G: ocfg) (P: Pattern S) id b X,
+      (id, b, X) ∈ (MatchAll (Head P) G) IFF
+      exists G', heads_sem G G' id b /\ X ∈ (MatchAll P G').
+  \end{lstlisting}
+\end{figure}
+
+The proof of \ilc{Pattern_Head_correct} relies on the following lemmas:
+
+\begin{figure}[H]
+  \label{fig:block_cor}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Definition heads_aux_P G0 (s:list (bid*blk*ocfg)) G :=
+      forall id b G', (id, b, G') ∈ s IFF heads_aux_sem G0 G G' id b.
+
+    Lemma heads_aux_correct:
+      forall G G0,
+      heads_aux_P G0 (map_fold (heads_aux G0) [] G) G.
+
+    Lemma heads_correct:
+      forall G G' id b,
+      (id, b, G') ∈ (heads G) IFF heads_sem G G' id b.
+  \end{lstlisting}
+\end{figure}
+
+\paragraph{\ilc{Branch}}
+
+\ilc{MatchAll} relies on the \ilc{branches} function to match the \ilc{Branch} constructor:
+
+\begin{figure}[H]
+  \label{fig:branches_fun}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Definition branches_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
+      match b.(blk_term) with
+        | TERM_Br _ l r => (id, b, (delete id G))::acc
+        | _ => acc
+      end.
+
+    Definition branches (G: ocfg): list (bid*blk*ocfg) :=
+      map_fold (branches_aux G) [] G.
+  \end{lstlisting}
+\end{figure}
+
+The semantic of \ilc{Branch} is characterized by the following definition:
+
+\begin{figure}[H]
+  \label{fig:sem_branch_def}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Record branch_aux_sem (G0 G G': ocfg) id b := {
+      EQ: G' = delete id G0;
+      BR: exists e l r, b.(blk_term) = TERM_Br e l r;
+      IN: G !!  id = Some b
+    }.
+
+    Definition branch_sem G G' id b := branch_aux_sem G G G' id b.
+  \end{lstlisting}
+\end{figure}
+
+The correctness of \ilc{MatchAll} for \ilc{Head} is proven by the following theorem:
+
+\begin{figure}[H]
+  \label{fig:sem_branch}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Theorem Pattern_Branch_correct {S}:
+      forall G P B id (s:S),
+      (id,B,s) ∈ (MatchAll (Branch P) G) IFF
+      exists G', branch_sem G G' id B /\ s ∈ (MatchAll P G').
+  \end{lstlisting}
+\end{figure}
+
+The proof of \ilc{Pattern_Branch_correct} relies on the following lemmas:
+
+\begin{figure}[H]
+  \label{fig:block_cor}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Definition branches_aux_P G0 (s:list (bid*blk*ocfg)) G :=
+      forall id b G', (id, b, G') ∈ s IFF branch_aux_sem G0 G G' id b.
+
+    Lemma branches_aux_correct:
+      forall G G0,
+      branches_aux_P G0 (map_fold (branches_aux G0) [] G) G.
+
+    Lemma branches_correct:
+      forall G G' id b, 
+      (id,b,G') ∈ (branches G) IFF branch_sem G G' id b.
+  \end{lstlisting}
+\end{figure}
 
 \section{Cas d'étude: Block Fusion}
 \label{sec:case}
 
+In this section, we will define the Block Fusion optimization, describe a corresponding OCFG pattern,
+and outline the proof of correctness of the optimization using the pattern.
+
 \subsection{motivation for Block Fusion}
 
-\begin{itemize}
-  \item blocks leftover by other optims
-  \item modifies CFG
-  \item fairly simple optim
+The Block Fusion optimization consists of picking two blocks $A$ and $B$,
+such that $A$ is the only predecessor of $B$ and $B$ is the only successor of $A$,
+and replacing them with a single block containing the code of $A$ and $B$.
+
+This optimization is relevant for three main reasons:\begin{itemize}
+  \item It is a commonly used optimization, usually to clear blocks created by others.
+  \item It is an optimization that modifies the graph.
+  \item It is simple to prove on paper that the optimization is correct.
 \end{itemize}
 
-\subsection{Block Fusion pattern}
+\subsection{the \texttt{BlockFusion} pattern}
+
+The \texttt{BlockFusion} pattern is defined in the code as \texttt{When BlockFusion\_f (Block (Head \_))}.\\
+\texttt{BlockFusion\_f} is a boolean function which will be talked about in more detail in the following subsection.\\
+\texttt{Block Head \_} identifies two blocks $A$ and $B$, such that $B$ doesn't have predecessors in the graph with $A$ removed. \texttt{BlockFusion\_f} gives additional conditions on $A$ and $B$ such that Block Fusion will be correct.
+
+For this pattern we can define a corresponding semantic, which we'll then use to prove the correctness of the optimization.
+
+\subsection{\leon{preuve de correction} Théorème: \texttt{denote\_ocfg\_equiv}}
+\label{sec:equiv}
 
 \leon{defis d'interprétation ($\varphi$ \& term), renomage}
-
-\section{Théorème: \texttt{denote\_ocfg\_equiv}}
-\label{sec:equiv}
 
 \leon{exemple plus précis d'une preuve par coinduction}
 
@@ -179,11 +607,41 @@
 \end{itemize}
 
 \section{implémentation (+ raison pour s'arrèter à naïve (rapide))}
+\label{sec:impl}
 
 \section{A voir: Approfondissements}
 \label{sec:appr}
 
 \subsection{Loop pattern}
+
+\xymatrix{
+  \ar[d]&&&\ar[d]\\
+  *+[F]\txt{A}\ar@/^/[d]& & & *+[F]\txt{B}\ar@/^/[d]\\
+  *+[F]\txt{B}\ar@/^/[u] \ar@/_/[dr]\ar[d]& & \Rightarrow & *+[F]\txt{A}\ar@/^/[u] \ar@/_/[dr]\ar[d]\\
+  &*+[F]\txt{*}\ar@/_/[ul]& & & *+[F]\txt{*}\ar@/_/[ul]
+}
+
+\xymatrix{
+  \ar[dd]&&&\ar[d]\\
+  &&&*+[F]\txt{*}\ar[d]\\
+  *+[F]\txt{A}\ar@/_/[dr]\ar[d]&&\Rightarrow&*+[F]\txt{A}\ar@/_/[dr]\ar[d]\\
+  &*+[F]\txt{*}\ar@/_/[ul]&&&*+[F]\txt{*}\ar@/_/[ul]
+}
+
+\xymatrix{
+  \ar[dd]&&&\ar[d]\\
+  &&&*+[F]\txt{A}\ar@/_/[r]\ar[d]&*+[F]\txt{1}\ar@/_/[l]\\
+  *+[F]\txt{A}\ar@/_/[dr]\ar[d]&*+[F]\txt{2}\ar@/_/[l]&\Rightarrow&*+[F]\txt{A'}\ar@/_/[r]\ar[d]&*+[F]\txt{2}\ar@/_/[l]\\
+  &*+[F]\txt{1}\ar@/_/[u]&&&
+}
+
+\xymatrix{
+  \ar[dd]&&&\ar[d]\\
+  &&&*+[F]\txt{1}\ar[d]\\
+  *+[F]\txt{A}\ar@/_/[dr]\ar[dd]&*+[F]\txt{2}\ar@/_/[l]&\Rightarrow&*+[F]\txt{A}\ar@/_/[dr]\ar[d]&*+[F]\txt{1}\ar@/_/[l]\\
+  &*+[F]\txt{1}\ar@/_/[u]&&*+[F]\txt{2}\ar[d]&*+[F]\txt{2}\ar@/_/[u]\\
+  &&&&&
+}
 
 \subsection{Optim efficace}
 
