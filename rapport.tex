@@ -196,15 +196,21 @@ It takes a pattern as argument to match against the rest of the graph, and retur
 
 The \ilc{Head} constructor matches any block of the graph without predecessors.
 It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.\\
-Note that this constructor could not be directly implemented as a \ilc{When \_ Block \_} since it depends on the rest of the graph, which \ilc{When} wouldn't have access to.
+Note that this constructor could not be directly implemented as a \ilc{When (Block \_) \_} since it depends on the rest of the graph, which \ilc{When} wouldn't have access to.
 
 \paragraph{\ilc{Branch}}
 
 The \ilc{Branch} constructor matches any block of the graph whose terminator is a conditional jump.
 It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.
-This constructor could be implemented as a \ilc{When \_ Block \_}, but has been implemented directly because \leon{???}.
+This constructor could be implemented as a \ilc{When (Block \_) \_}, but has been implemented directly because \leon{???}.
 
-\leon{schéma pour chaque pattern}
+% \leon{schéma pour chaque pattern}
+
+\subsection*{Pattern examples}
+
+With these constructors, we can build patterns that characterize subgraphs.
+
+For example, if we want to capture a block for Conditional Constant Propagation, we can use the pattern \ilc{When (Block Graph) f} with \ilc{f} a boolean function that takes a block as argument returns true if the block's terminator is a branch with a condition that evaluates to a constant.
 
 \subsection{Matcher functions}
 
