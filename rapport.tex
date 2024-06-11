@@ -204,14 +204,24 @@ The \ilc{Branch} constructor matches any block of the graph whose terminator is 
 It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.
 This constructor could be implemented as a \ilc{When (Block \_) \_}, but has been implemented directly because \leon{???}.
 
-% \leon{schéma pour chaque pattern}
-
-\subsection*{Pattern examples}
+\subsection*{Pattern example}
 
 With these constructors, we can build patterns that characterize subgraphs.
 
-For example, if we want to capture a block for Conditional Constant Propagation, we can use the pattern \ilc{When (Block Graph) f} with \ilc{f} a boolean function that takes a block as argument returns true if the block's terminator is a branch with a condition that evaluates to a constant.\\
-That pattern has type \ilc{Pattern (bid*blk*ocfg)}.
+For example, we want to capture a subgraph for the \ilc{BlockFusion} fusion optimization. That is: fusing two blocks whose execution always follow each other into a single block.\\
+We can recognize the applicable subgraphs with the pattern \ilc{When (Block (Head Graph)) BlockFusion\_f}.\\
+\ilc{Block} matches any first block, then \ilc{Head} matches a block that has no predecessors (except possibly \ilc{Block}), and finally \ilc{When _ BlockFusion\_f} sets additional conditions on the two blocks for the optimization.
+\begin{figure}[h]
+  \xymatrix{
+    &&&&\\
+    &*+[F]\txt{Block\\Any block}\ar[dd]&&\;\ar@{-->}`u[ul] `[ll] [ll]&\\
+    *+[F.]\txt{BlockFusion\_f\\Sets conditions on\\the two blocks}\ar@{..>}`u[ur] [ur]\ar@{..>}`d[dr] [dr]&&&\txt{Graph}\\
+    &*+[F]\txt{Head\\No predecessors\\once Block is removed}\ar@{-->}`d[dr] `[rr] [rr]&&&\\ 
+    &&&
+    \save "2,3"."4,5"*[F--]\frm{} \restore
+  }
+  \caption{The \ilc{BlockFusion} pattern}
+\end{figure}
 
 \subsection{Matcher functions}
 
@@ -219,20 +229,7 @@ To use these patterns, we need to define a matcher function. That is, a function
 
 We implemented the \ilc{MatchAll} function, which returns all the subgraphs corresponding to a given pattern.
 
-\begin{figure}[h]
-  \label{fig:fmapr}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Definition flat_map_r {A B C} (f : B -> list C) :=
-      fix flat_map_r (l : list (A*B)) : list (A*C) :=
-        match l with
-        | [] => []
-        | (a, b)::q => (map (fun c => (a, c)) (f b))++flat_map_r q
-    end.
-  \end{lstlisting}
-  \caption{The \ilc{flat_map_r} function}
-\end{figure}
-
-\begin{figure}[h]
+\begin{figure}[H]
   \label{fig:match}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
     Fixpoint MatchAll {S} (P: Pattern S) (g: ocfg) : list S :=
@@ -248,199 +245,33 @@ We implemented the \ilc{MatchAll} function, which returns all the subgraphs corr
   \end{lstlisting}
   \caption{The \ilc{MatchAll} function}
 \end{figure}
-\noindent
-\ilc{MatchAll} relies heavily on the \ilc{flat_map_r} function, of type \ilc{forall {A B C}, (B -> list C) -> list (A * B) -> list (A * C)}.\\
-It applies the rest of the pattern to the right-hand side of what the current constructor's application returns.
 
-\ilc{flat_map_r} is characterized by the following lemma:
 \begin{figure}[h]
-  \label{fig:in_flat_map_r}
+  \label{fig:fmapr}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Lemma in_flat_map_r {A B C}:
-      forall (f:B->list C) (l:list (A*B)) (a:A) (c:C), (a,c) ∈ (flat_map_r f l) IFF
-      exists b, (a,b) ∈ l /\ c ∈ (f b).
+    Definition flat_map_r {A B C} (f : B -> list C) :=
+      fix flat_map_r (l : list (A*B)) : list (A*C) :=
+        match l with
+        | [] => []
+        | (a, b)::q => (map (fun c => (a, c)) (f b))++flat_map_r q
+    end.
   \end{lstlisting}
+  \caption{The \ilc{flat_map_r} function}
 \end{figure}
 
+\noindent
 With this, we can have a correctness and completeness proof for applying MatchAll to each constructor.
 
-\paragraph{\ilc{Graph}}
+Proving the correctness for \ilc{Graph}, \ilc{When} and \ilc{Map} is immediate thanks to builtin lemmas on \ilc{filter} and \ilc{map}.
 
-The following theorem shows that \ilc{MatchAll} correctly identifies the \ilc{Graph} pattern.
+The proof mechanism for \ilc{Block}, \ilc{Head} and \ilc{Branch} are similar. We will now detail it for \ilc{Head}.
 
-\begin{figure}[h]
-  \label{fig:sem_graph}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Theorem Pattern_Graph_correct: forall G G', G' ∈ (MatchAll Graph G) IFF G' = G.
-  \end{lstlisting}
-\end{figure}
-
-The proof is immediate from unfolding the definition of \ilc{MatchAll Graph}.
-
-\paragraph{\ilc{When}}
-
-The following theorem shows that \ilc{MatchAll} correctly identifies the \ilc{When} pattern.
+\ilc{MatchAll} relies on the \ilc{heads} function to match the \ilc{Head} constructor.\\
+The goal of that function is to find all the "heads", i.e. blocks without predecessors, in an OCFG.\\
+To do that, it folds a \ilc{heads_aux} function over the map. That function calls the \ilc{predecessors} function on each block, and appends the result to the return list if the block doesn't have predecessors.
 
 \begin{figure}[H]
-  \label{fig:sem_when}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Theorem Pattern_When_correct {S}:
-      forall (P: Pattern S) f X G,
-      X ∈ (MatchAll (When P f) G) IFF f X = true /\ X ∈ (MatchAll P G).
-  \end{lstlisting}
-\end{figure}
-
-The proof is immediate from the lemma \ilc{elem_of_list_filter} given by the \ilc{stdpp} library:
-
-\begin{figure}[H]
-  \label{fig:list_filter}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    elem_of_list_filter :
-      forall {A : Type} (P : A -> Prop) {H : forall x : A, Decision (P x)} (l : list A) (x : A),
-      x ∈ filter P l IFF P x /\ x ∈ l
-  \end{lstlisting}
-\end{figure}
-
-\paragraph{\ilc{Map}}
-
-The following theorem shows that \ilc{MatchAll} correctly identifies the \ilc{Map} pattern.
-
-\begin{figure}[H]
-  \label{fig:sem_when}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Theorem Pattern_Map_correct {S T}:
-      forall (P: Pattern S) (f: S -> T) X G,
-      X ∈ (MatchAll (Map P f) G) IFF exists y, X = f y /\ y ∈ (MatchAll P G).
-  \end{lstlisting}
-\end{figure}
-
-The proof is immediate from the lemma \ilc{elem_of_list_fmap} given by the \ilc{stdpp} library:
-
-\begin{figure}[H]
-  \label{fig:list_fmap}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    elem_of_list_fmap :
-      forall {A B : Type} (f : A -> B) (l : list A) (x : B),
-      x ∈ map f l IFF exists y : A, x = f y /\ y ∈ l
-  \end{lstlisting}
-\end{figure}
-
-\paragraph{\ilc{Focus}}
-
-\ilc{MatchAll} relies on the \ilc{focus} function to match the \ilc{Focus} constructor.
-
-\begin{figure}[H]
-  \label{fig:fun_focus}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Fixpoint focus_rec l (g1 g2: ocfg) :=
-      match l with
-      | [] => [(g1, g2)]
-      | (id,b)::q => focus_rec q g1 g2 ++ focus_rec q (delete id g1) (<[id:=b]> g2)
-    end.
-
-    Definition focus (G: ocfg) := focus_rec (map_to_list G) G void1.
-  \end{lstlisting}
-\end{figure}
-
-The semantic of \ilc{Focus} is characterized by the following definition:
-
-\begin{figure}[H]
-  \label{fig:sem_focus_def}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Record focus_sem (G G1 G2: ocfg): Prop := {
-      SUB1: G1 ⊆ G;
-      SUB2: G2 ⊆ G;
-      PART: G1 ## G2;
-      CUP: G1 ∪ G2 = G
-    }.
-  \end{lstlisting}
-\end{figure}
-
-The correctness of \ilc{MatchAll} for \ilc{Focus} is proven by the following theorem:
-
-\begin{figure}[H]
-  \label{fig:sem_focus}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Theorem Pattern_Focus_correct {S}:
-      forall (G G1: ocfg) (P:Pattern S) X, 
-        (G1, X) ∈ (MatchAll (Focus P) G) IFF
-        exists G2, focus_sem G G1 G2 /\ X ∈ (MatchAll P G2).
-  \end{lstlisting}
-\end{figure}
-
-The proof of \ilc{Pattern_Focus_correct} relies on the following lemma, which has not been proven:
-
-\begin{figure}[H]
-  \label{fig:focus_cor}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Lemma focus_correct: forall G, forall G1 G2, (G1, G2) ∈ (focus G) IFF focus_sem G G1 G2.
-  \end{lstlisting}
-\end{figure}
-
-\paragraph{\ilc{Block}}
-
-\ilc{MatchAll} relies on the \ilc{blocks} function to match the \ilc{Block} constructor:
-
-\begin{figure}[H]
-  \label{fig:blocks_fun}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Definition blocks_aux (G: ocfg) : (bid*blk) -> (bid*blk*ocfg) :=
-      fun '(id, b) => (id, b, delete id G).
-
-    Definition blocks (G: ocfg): list (bid*blk*ocfg) :=
-      map (blocks_aux G) (map_to_list G).
-  \end{lstlisting}
-\end{figure}
-
-The semantic of \ilc{Block} is characterized by the following definition:
-
-\begin{figure}[H]
-  \label{fig:sem_block_def}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Record blocks_aux_sem (G0 G G': ocfg) id b : Prop := 
-      {
-        EQ: G' = delete id G0;
-        IN: G !!  id = Some b
-      }.
-
-    Definition blocks_sem (G G': ocfg) id b := blocks_aux_sem G G G' id b.
-  \end{lstlisting}
-\end{figure}
-
-The correctness of \ilc{MatchAll} for \ilc{Block} is proven by the following theorem:
-
-\begin{figure}[H]
-  \label{fig:sem_block}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Theorem Pattern_Block_correct {S}:
-      forall (G: ocfg) (P: Pattern S) id (b:blk) X,
-      (id, b, X) ∈ MatchAll (Block P) G IFF
-      exists G', blocks_sem G G' id b /\ X ∈ MatchAll P G'.
-  \end{lstlisting}
-\end{figure}
-
-The proof of \ilc{Pattern_Block_correct} relies on the following lemmas:
-
-\begin{figure}[H]
-  \label{fig:block_cor}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Lemma blocks_aux_correct: forall G G0 G' id b, 
-      (id, b, G') ∈ map (blocks_aux G0) (map_to_list G) IFF blocks_aux_sem G0 G G' id b.
-
-    Lemma blocks_correct: forall G G' id b,
-      (id, b, G') ∈ blocks G IFF blocks_sem G G' id b.
-  \end{lstlisting}
-\end{figure}
-
-\paragraph{\ilc{Head}}
-
-\ilc{MatchAll} relies on the \ilc{heads} function to match the \ilc{Head} constructor:
-
-\begin{figure}[H]
-  \label{fig:heads_fun}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Definition is_empty (S: gset bid) := decide (S = ∅).
-
     Definition heads_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
       if is_empty (predecessors id G)
       then (id, b, delete id G)::acc
@@ -448,12 +279,13 @@ The proof of \ilc{Pattern_Block_correct} relies on the following lemmas:
 
     Definition heads (G: ocfg): list (bid*blk*ocfg) := map_fold (heads_aux G) [] G.
   \end{lstlisting}
+  \caption{The \ilc{heads} function}
+  \label{fig:heads_fun}
 \end{figure}
 
-The semantic of \ilc{Head} is characterized by the following definition:
+With these function, we can define the semantics corresponding to each function. We have to define them first for the auxiliary function for the semantics proof.
 
 \begin{figure}[H]
-  \label{fig:sem_block_def}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
     Record heads_aux_sem (G0 G G': ocfg) id b := {
       EQ: G' = delete id G0;
@@ -463,21 +295,11 @@ The semantic of \ilc{Head} is characterized by the following definition:
 
     Definition heads_sem (G G':ocfg) (id:bid) b := heads_aux_sem G G G' id b.
   \end{lstlisting}
+  \caption{The semantic definition for \ilc{Head/heads}}
+  \label{fig:sem_block_def}
 \end{figure}
 
-The correctness of \ilc{MatchAll} for \ilc{Head} is proven by the following theorem:
-
-\begin{figure}[H]
-  \label{fig:sem_block}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Theorem Pattern_Head_correct {S}:
-      forall (G: ocfg) (P: Pattern S) id b X,
-      (id, b, X) ∈ (MatchAll (Head P) G) IFF
-      exists G', heads_sem G G' id b /\ X ∈ (MatchAll P G').
-  \end{lstlisting}
-\end{figure}
-
-The proof of \ilc{Pattern_Head_correct} relies on the following lemmas:
+Finally, we can prove the semantics for the auxiliary function, the \ilc{heads} function and \ilc{MatchAll Head}.
 
 \begin{figure}[H]
   \label{fig:block_cor}
@@ -492,69 +314,11 @@ The proof of \ilc{Pattern_Head_correct} relies on the following lemmas:
     Lemma heads_correct:
       forall G G' id b,
       (id, b, G') ∈ (heads G) IFF heads_sem G G' id b.
-  \end{lstlisting}
-\end{figure}
 
-\paragraph{\ilc{Branch}}
-
-\ilc{MatchAll} relies on the \ilc{branches} function to match the \ilc{Branch} constructor:
-
-\begin{figure}[H]
-  \label{fig:branches_fun}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Definition branches_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
-      match b.(blk_term) with
-        | TERM_Br _ l r => (id, b, (delete id G))::acc
-        | _ => acc
-      end.
-
-    Definition branches (G: ocfg): list (bid*blk*ocfg) :=
-      map_fold (branches_aux G) [] G.
-  \end{lstlisting}
-\end{figure}
-
-The semantic of \ilc{Branch} is characterized by the following definition:
-
-\begin{figure}[H]
-  \label{fig:sem_branch_def}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Record branch_aux_sem (G0 G G': ocfg) id b := {
-      EQ: G' = delete id G0;
-      BR: exists e l r, b.(blk_term) = TERM_Br e l r;
-      IN: G !!  id = Some b
-    }.
-
-    Definition branch_sem G G' id b := branch_aux_sem G G G' id b.
-  \end{lstlisting}
-\end{figure}
-
-The correctness of \ilc{MatchAll} for \ilc{Head} is proven by the following theorem:
-
-\begin{figure}[H]
-  \label{fig:sem_branch}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Theorem Pattern_Branch_correct {S}:
-      forall G P B id (s:S),
-      (id,B,s) ∈ (MatchAll (Branch P) G) IFF
-      exists G', branch_sem G G' id B /\ s ∈ (MatchAll P G').
-  \end{lstlisting}
-\end{figure}
-
-The proof of \ilc{Pattern_Branch_correct} relies on the following lemmas:
-
-\begin{figure}[H]
-  \label{fig:block_cor}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Definition branches_aux_P G0 (s:list (bid*blk*ocfg)) G :=
-      forall id b G', (id, b, G') ∈ s IFF branch_aux_sem G0 G G' id b.
-
-    Lemma branches_aux_correct:
-      forall G G0,
-      branches_aux_P G0 (map_fold (branches_aux G0) [] G) G.
-
-    Lemma branches_correct:
-      forall G G' id b, 
-      (id,b,G') ∈ (branches G) IFF branch_sem G G' id b.
+    Theorem Pattern_Head_correct {S}:
+      forall (G: ocfg) (P: Pattern S) id b X,
+      (id, b, X) ∈ (MatchAll (Head P) G) IFF
+      exists G', heads_sem G G' id b /\ X ∈ (MatchAll P G').
   \end{lstlisting}
 \end{figure}
 
@@ -576,13 +340,7 @@ This optimization is relevant for three main reasons:\begin{itemize}
   \item It is simple to prove on paper that the optimization is correct.
 \end{itemize}
 
-\subsection{the \texttt{BlockFusion} pattern}
-
-The \texttt{BlockFusion} pattern is defined in the code as \texttt{When (Block (Head \_)) BlockFusion\_f}.\\
-\texttt{BlockFusion\_f} is a boolean function which will be talked about in more detail in the following subsection.\\
-\texttt{Block Head \_} identifies two blocks $A$ and $B$, such that $B$ doesn't have predecessors in the graph with $A$ removed. \texttt{BlockFusion\_f} gives additional conditions on $A$ and $B$ such that Block Fusion will be correct.
-
-For this pattern we can define a corresponding semantic, which we'll then use to prove the correctness of the optimization.
+In the previous section, we already gave a pattern for \ilc{BlockFusion}, we will use a slight variation, which allows further composing:\\\ilc{Definition BlockFusion {S} (P: Pattern S) := When (Block (Head P)) BlockFusion_f.}
 
 \subsection{\leon{preuve de correction} Théorème: \texttt{denote\_ocfg\_equiv}}
 \label{sec:equiv}
