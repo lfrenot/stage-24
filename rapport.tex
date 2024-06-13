@@ -345,34 +345,116 @@ In the previous section, we already gave a pattern for \ilc{BlockFusion}, we wil
 \subsection{\leon{preuve de correction} Théorème: \texttt{denote\_ocfg\_equiv}}
 \label{sec:equiv}
 
-\leon{defis d'interprétation ($\varphi$ \& term), renomage}
+Before implementing and proving an implementation for Block Fusion, we first established a larger theorem for optimizations that modify the control flow graph.\\
+The goal of that theorem is to allow replacing a part of the OCFG with an equivalent subgraph. And it is as follows: \begin{figure}[H]
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Theorem denote_ocfg_equiv
+  (g1 g2 g2' : ocfg) (σ : bid_renaming) (nFROM nTO: gset bid) :
+    inputs g2 ∩ inputs g2' ## nFROM -> nFROM ⊆ inputs g2 ∪ inputs g2' ->
+    inputs g2' ∖ inputs g2 ⊆ nTO -> nTO ⊆ inputs g2 ∪ inputs g2' -> nTO ## outputs g1 ->
+    g1 ## g2 -> ocfg_term_rename σ g1 ## g2' ->
+    dom_renaming σ nFROM g2 g2' ->
+    denote_ocfg_equiv_cond g2 g2' nFROM nTO σ ->
+    forall from to' to,
+    to' = σ to ->
+    to ∉ nTO -> from ∉ nFROM ->
+    ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, to').
+  \end{lstlisting}
+  \caption{The \ilc{denote_ocfg_equiv} theorem}
+\end{figure}
 
-\leon{exemple plus précis d'une preuve par coinduction}
+We will now detail this theorem.
 
-\subsection*{intro}
+\subsubsection{Arguments}
 
-\subsection{defis}
-
-\leon{présentation des défis que pose le formalisme + le niveau d'interprétation}
-
-\leon{schéma idée de base $\rightarrow$ problèmes noms et phi $\rightarrow$ hypothèses etc.}
-
-\subsection{hypothèses}
-
-\begin{itemize}
-  \item hyp principale: \texttt{denote\_ocfg\_equiv\_cond}
-  \item hyps sur nTO et nFROM \leon{! Schémas}
-  \item \texttt{dom\_renaming}
+The theorem takes 6 arguments:\begin{itemize}
+  \item \ilc{g1}: The part of the graph that doesn't change\footnote{As can be seen in the figure, it does change slightly, we will discuss this later}.
+  \item \ilc{g2} and \ilc{g2'}: The part of the graph that gets replaced, and its replacement.
+  \item \ilc{SIG}: a \ilc{bid -> bid} function that maps the inputs of g2 over the inputs of g2'.
+  \item \ilc{nFROM} and \ilc{nTO}: Sets of block ids from/to which the execution would not be equivalent.
 \end{itemize}
 
-\subsection{lemmes}
+\subsubsection{Conclusion}
 
-\begin{itemize}
-  \item \texttt{bk\_phi\_rename\_eutt}
+The conclusion of the theorem is at follows: \begin{figure}[H]
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    forall from to' to,
+    to' = σ to ->
+    to ∉ nTO -> from ∉ nFROM ->
+    ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, to').
+  \end{lstlisting}
+  % \caption{The \ilc{denote_ocfg_equiv} theorem}
+\end{figure}
+
+When replacing \ilc{g2} with \ilc{g2'}, a discrepancy in block ids may appear. For example, when doing Block Fusion, we go from entering with one id and exiting with another, to entering and exiting with the same.\\
+Because of that, we need to do some renaming in the rest of the graph to keep the same semantics after the optimization.\\
+There are two possibilities, either we change the phi-nodes (and block fusion gets the id of the input block), or we change the terminators (and block fusion gets the id of the output block).\\
+Since the semantics of terminators is simpler, we decided to do the latter.
+
+\ilc{ocfg_term_rename} then applies \ilc{SIG} to each block id in the terminator of each block of \ilc{g1}.
+
+\subsubsection{\ilc{denote_ocfg_equiv_cond}}
+
+\ilc{denote_ocfg_equiv_cond} is the equivalence condition on \ilc{g2} and \ilc{g2'}. It is straightforward.
+
+\begin{figure}[H]
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Definition denote_ocfg_equiv_cond
+      (g g': ocfg) (nFROM nTO :gset bid) (σ: bid -> bid) :=
+        forall origin header,
+          header ∉ nTO ->
+          origin ∉ nFROM ->
+          ⟦g⟧bs (origin, header) ≈ ⟦g'⟧bs (origin, σ header).
+  \end{lstlisting}
+\end{figure}
+
+\subsubsection{\ilc{dom_renaming}}
+
+\ilc{dom_renaming} is the condition that fixes\; \ilc{SIG}'s domain.\\
+It has two conditions:\begin{itemize}
+  \item If an id is in \ilc{g2}, \;\ilc{SIG} id is in \ilc{g2'}.
+  \item If an id not in \ilc{nFROM}, it is a fixpoint.
 \end{itemize}
 
-\section{implémentation (+ raison pour s'arrèter à naïve (rapide))}
-\label{sec:impl}
+\begin{figure}[H]
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    Record dom_renaming (σ : bid_renaming) (nFROM : gset bid) (g g': ocfg) : Prop :=
+      {
+        in_dom : forall id, id ∈ inputs g -> (σ id) ∈ inputs g';
+        out_dom : forall id, id ∉ nFROM -> (σ id) = id
+      }.
+  \end{lstlisting}
+\end{figure}
+
+\subsubsection{Conditions on \ilc{nTO}}
+
+\paragraph{\ilc{inputs g2' ∖ inputs g2 ⊆ nTO}}
+
+% \begin{figure}
+%   \xymatrix{
+    
+%   }
+% \end{figure}
+
+If we add a block from \ilc{g2} to \ilc{g2'}, the execution would be different if we enter the graph though that block.
+
+\paragraph{\ilc{nTO ⊆ inputs g2 ∪ inputs g2'}}
+
+If we enter somewhere that is unchanged, the execution doesn't change.
+
+\paragraph{\ilc{nTO \#\# outputs g1}}
+
+When we exit \ilc{g1} into \ilc{g2} or \ilc{g2'}, the execution needs to still be the same.
+
+\subsubsection{Conditions on \ilc{nFROM}}
+
+\paragraph{\ilc{inputs g2 ∩ inputs g2' \#\# nFROM}}
+
+If we come from somewhere that is in both g2 and g2', the execution should be valid.
+
+\paragraph{\ilc{nFROM ⊆ inputs g2 ∪ inputs g2'}}
+
+If we come from somewhere that was not changed, the execution should still be valid.
 
 \section{A voir: Approfondissements}
 \label{sec:appr}
