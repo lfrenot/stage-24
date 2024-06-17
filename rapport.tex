@@ -322,139 +322,140 @@ Finally, we can prove the semantics for the auxiliary function, the \ilc{heads} 
   \end{lstlisting}
 \end{figure}
 
-\section{Cas d'étude: Block Fusion}
-\label{sec:case}
+\section{Denotation}
+\label{sec:deno}
+
+In this section we will informally define an optimization class, show a theorem for proving the correctness of optimizations of that class, and apply this theorem to an implementation of Block Fusion.
+
+\subsection{An optimization class}
+
+Since the goal of the patterns is to identify subgraphs, we want to focus on optimizations that only modify a section of the graph. (As opposed to ones that may modify everything, like constant propagation.)\\
+Ideally, we want to be able to replace any subgraph with an equivalent subgraph.
+
+\begin{figure}[h]
+  \xymatrix{
+    &&&&&&&&\\
+    G_2&\approx&G_2'&\implies&*+[F]{G_2}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]&\approx&*+[F]{G_2'}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]\\
+    &&&&&&&&
+  }
+\end{figure}
+\begin{figure}[h]
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Theorem (g1 g2 g2' : ocfg):
+  forall from to, ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, to) ->
+  forall from to, ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ g1⟧bs (from, to).
+  \end{lstlisting}
+\end{figure}
+
+However, this ideal theorem is not enough. In the case of Block Fusion for example, since we replace two blocs by one, the change in ids means that either we have to enter by different ids, or we have to exit by different ids.\\
+There needs to be some renaming. We chose to apply the renaming to \ilc{to} and to \ilc{g1}'s terminators, since that keeps the semantics equivalent.
+
+We define a function \ilc{ocfg_term_rename} which, given a function over ids \ilc{SIG} and a graph \ilc{g}, returns \ilc{g} with \ilc{SIG} applied to each id in its blocks' terminators.\\
+This new function gives us the following theorem:
+\begin{figure}[h]
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Theorem (g1 g2 g2' : ocfg) (σ : bid -> bid):
+  forall from to, ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to) ->
+  forall from to, ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, SIG to).
+  \end{lstlisting}
+\end{figure}
+
+However, this still cannot be applied to Block Fusion. Indeed, if we try to start on the second block, the semantics are obliviously different.\\
+Similar issues can come from having an incorrect origin block. So we have to introduce two sets of ids \ilc{nTO} and \ilc{nFROM} to set condition on the input and origin ids.\\
+\begin{figure}[H]
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Theorem (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid):
+  (forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
+  forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, SIG to).
+  \end{lstlisting}
+\end{figure}
+
+Finally, we need some conditions to make sure that:\begin{itemize}
+  \item the unions are well-formed,
+  \item \ilc{nFROM} and \ilc{nTO} are preserved during the (coinductive) proof,
+  \item \ilc{SIG} only changes ids from \ilc{g2} to \ilc{g2'}.
+\end{itemize}
+
+These conditions give us the following final theorem:
+\begin{figure}[H]
+\begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Theorem denote_ocfg_equiv
+  (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid) :
+    inputs g2 ∩ inputs g2' ## nFROM -> nFROM ⊆ inputs g2 ∪ inputs g2' ->
+    inputs g2' ∖ inputs g2 ⊆ nTO -> nTO ⊆ inputs g2 ∪ inputs g2' -> nTO ## outputs g1 ->
+    g1 ## g2 -> ocfg_term_rename σ g1 ## g2' ->
+    (forall id, id ∈ inputs g2 -> (σ id) ∈ inputs g2') ->
+    (forall id, id ∉ nFROM -> (σ id) = id) ->
+    (forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
+    forall from to,
+    to ∉ nTO -> from ∉ nFROM ->
+    ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, σ to).
+  \end{lstlisting}
+  \caption{The \ilc{denote_ocfg_equiv} theorem}
+\end{figure}
+
+\subsection{motivation for Block Fusion}
 
 In this section, we will define the Block Fusion optimization, describe a corresponding OCFG pattern,
 and outline the proof of correctness of the optimization using the pattern.
-
-\subsection{motivation for Block Fusion}
 
 The Block Fusion optimization consists of picking two blocks $A$ and $B$,
 such that $A$ is the only predecessor of $B$ and $B$ is the only successor of $A$,
 and replacing them with a single block containing the code of $A$ and $B$.
 
 This optimization is relevant for three main reasons:\begin{itemize}
-  \item It is a commonly used optimization, usually to clear blocks created by others.
+  \item It is a commonly used optimization, for example to clear blocks created while building SSA form.
   \item It is an optimization that modifies the graph.
   \item It is simple to prove on paper that the optimization is correct.
 \end{itemize}
 
 In the previous section, we already gave a pattern for \ilc{BlockFusion}, we will use a slight variation, which allows further composing:\\\ilc{Definition BlockFusion {S} (P: Pattern S) := When (Block (Head P)) BlockFusion_f.}
 
-\subsection{\leon{preuve de correction} Théorème: \texttt{denote\_ocfg\_equiv}}
-\label{sec:equiv}
+\subsection{Block Fusion for real actually I swear}
 
-Before implementing and proving an implementation for Block Fusion, we first established a larger theorem for optimizations that modify the control flow graph.\\
-The goal of that theorem is to allow replacing a part of the OCFG with an equivalent subgraph. And it is as follows: \begin{figure}[H]
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Theorem denote_ocfg_equiv
-  (g1 g2 g2' : ocfg) (σ : bid_renaming) (nFROM nTO: gset bid) :
-    inputs g2 ∩ inputs g2' ## nFROM -> nFROM ⊆ inputs g2 ∪ inputs g2' ->
-    inputs g2' ∖ inputs g2 ⊆ nTO -> nTO ⊆ inputs g2 ∪ inputs g2' -> nTO ## outputs g1 ->
-    g1 ## g2 -> ocfg_term_rename σ g1 ## g2' ->
-    dom_renaming σ nFROM g2 g2' ->
-    denote_ocfg_equiv_cond g2 g2' nFROM nTO σ ->
-    forall from to' to,
-    to' = σ to ->
-    to ∉ nTO -> from ∉ nFROM ->
-    ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, to').
-  \end{lstlisting}
-  \caption{The \ilc{denote_ocfg_equiv} theorem}
-\end{figure}
-
-We will now detail this theorem.
-
-\subsubsection{Arguments}
-
-The theorem takes 6 arguments:\begin{itemize}
-  \item \ilc{g1}: The part of the graph that doesn't change\footnote{As can be seen in the figure, it does change slightly, we will discuss this later}.
-  \item \ilc{g2} and \ilc{g2'}: The part of the graph that gets replaced, and its replacement.
-  \item \ilc{SIG}: a \ilc{bid -> bid} function that maps the inputs of g2 over the inputs of g2'.
-  \item \ilc{nFROM} and \ilc{nTO}: Sets of block ids from/to which the execution would not be equivalent.
+\ilc{BlockFusion_f} has two conditions:\begin{itemize}
+  \item the terminator of the first block is an absolute jump to the second block,
+  \item the second block does not have phi nodes.
 \end{itemize}
 
-\subsubsection{Conclusion}
+The first condition is needed (instead of just checking the successors) because, if there is a conditional jump, evaluating the condition may lead to an error, and so to a difference in semantic after the fusion.\\
+The second condition is needed because of the difference in evaluation between phi-nodes and assignment operations.
 
-The conclusion of the theorem is at follows: \begin{figure}[H]
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    forall from to' to,
-    to' = σ to ->
-    to ∉ nTO -> from ∉ nFROM ->
-    ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, to').
-  \end{lstlisting}
-  % \caption{The \ilc{denote_ocfg_equiv} theorem}
-\end{figure}
-
-When replacing \ilc{g2} with \ilc{g2'}, a discrepancy in block ids may appear. For example, when doing Block Fusion, we go from entering with one id and exiting with another, to entering and exiting with the same.\\
-Because of that, we need to do some renaming in the rest of the graph to keep the same semantics after the optimization.\\
-There are two possibilities, either we change the phi-nodes (and block fusion gets the id of the input block), or we change the terminators (and block fusion gets the id of the output block).\\
-Since the semantics of terminators is simpler, we decided to do the latter.
-
-\ilc{ocfg_term_rename} then applies \ilc{SIG} to each block id in the terminator of each block of \ilc{g1}.
-
-\subsubsection{\ilc{denote_ocfg_equiv_cond}}
-
-\ilc{denote_ocfg_equiv_cond} is the equivalence condition on \ilc{g2} and \ilc{g2'}. It is straightforward.
+With this, we can create a \ilc{fusion} function for Block Fusion (\ilc{term_rename} applies \ilc{SIG} to each id in the terminator).
 
 \begin{figure}[H]
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Definition denote_ocfg_equiv_cond
-      (g g': ocfg) (nFROM nTO :gset bid) (σ: bid -> bid) :=
-        forall origin header,
-          header ∉ nTO ->
-          origin ∉ nFROM ->
-          ⟦g⟧bs (origin, header) ≈ ⟦g'⟧bs (origin, σ header).
+Definition fusion (σ: bid -> bid) (idA : bid) (A B: blk): blk := {|
+  blk_phis       := A.(blk_phis);
+  blk_code       := A.(blk_code) ++ B.(blk_code);
+  blk_term       := term_rename σ B.(blk_term);
+  blk_comments   := fusion_comments A B
+|}.
   \end{lstlisting}
+  \caption{The \ilc{fusion} function}
 \end{figure}
 
-\subsubsection{\ilc{dom_renaming}}
-
-\ilc{dom_renaming} is the condition that fixes\; \ilc{SIG}'s domain.\\
-It has two conditions:\begin{itemize}
-  \item If an id is in \ilc{g2}, \;\ilc{SIG} id is in \ilc{g2'}.
-  \item If an id not in \ilc{nFROM}, it is a fixpoint.
-\end{itemize}
+We also define \ilc{SIGfusion}, the renaming function for Block Fusion:
 
 \begin{figure}[H]
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Record dom_renaming (σ : bid_renaming) (nFROM : gset bid) (g g': ocfg) : Prop :=
-      {
-        in_dom : forall id, id ∈ inputs g -> (σ id) ∈ inputs g';
-        out_dom : forall id, id ∉ nFROM -> (σ id) = id
-      }.
+Definition σfusion idA idB := fun (id: bid) => if decide (id=idA) then idB else id.
   \end{lstlisting}
 \end{figure}
 
-\subsubsection{Conditions on \ilc{nTO}}
+With these, we can prove first that \ilc{fusion} is correct, and then that the Block Fusion optimization is correct.
 
-\paragraph{\ilc{inputs g2' ∖ inputs g2 ⊆ nTO}}
-
-% \begin{figure}
-%   \xymatrix{
-    
-%   }
-% \end{figure}
-
-If we add a block from \ilc{g2} to \ilc{g2'}, the execution would be different if we enter the graph though that block.
-
-\paragraph{\ilc{nTO ⊆ inputs g2 ∪ inputs g2'}}
-
-If we enter somewhere that is unchanged, the execution doesn't change.
-
-\paragraph{\ilc{nTO \#\# outputs g1}}
-
-When we exit \ilc{g1} into \ilc{g2} or \ilc{g2'}, the execution needs to still be the same.
-
-\subsubsection{Conditions on \ilc{nFROM}}
-
-\paragraph{\ilc{inputs g2 ∩ inputs g2' \#\# nFROM}}
-
-If we come from somewhere that is in both g2 and g2', the execution should be valid.
-
-\paragraph{\ilc{nFROM ⊆ inputs g2 ∪ inputs g2'}}
-
-If we come from somewhere that was not changed, the execution should still be valid.
+\begin{figure}[H]
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Theorem Denotation_BlockFusion_correct {S} G idA A idB B f to P (X:S):
+  let σ := σfusion idA idB in
+  let G0 := delete idB (delete idA G) in
+  to <> idB ->
+  f <> idA ->
+  (idA, A, (idB, B, X)) ∈ (MatchAll (BlockFusion P) G) ->
+  ⟦ G ⟧bs (f, to) ≈ ⟦ <[idB:=fusion σ idA A B]> (ocfg_term_rename σ G0) ⟧bs (f, σ to).
+      \end{lstlisting}
+\end{figure}
 
 \section{A voir: Approfondissements}
 \label{sec:appr}
