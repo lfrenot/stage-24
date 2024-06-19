@@ -272,9 +272,10 @@ The pattern starts by the \ilc{Block} to match any block \ilc{bk} \yz{(What does
 \subsection{Matcher functions}
 \label{sec:matcher}
 
-We now turn to the question of defining the semantics of our patterns, via a \emph{matcher function}. That is, a function that takes a pattern and an OCFG as argument, and returns a subgraph, or each subgraph, that matches that pattern.
-
-We implemented the \ilc{MatchAll} function, which returns all the subgraphs corresponding to a given pattern.
+We now turn to the question of defining the semantics of our patterns, via a \emph{matcher function}. 
+\yzt{Such function takes a pattern \ilc{p} and an \ocfg{} \ilc{G} as arguments, and returns a set of decompositions of \ilc{G} that match \ilc{p}.}
+\yzt{We have mainly focused so far on \emph{specifying} patterns, by implementing a matcher that returns \emph{all} valid decompositions. 
+Although rather meant as a specification than as a realistic implementation, the \ilc{MatchAll} function, depicted in Figure~\ref{fig:matchall}, is nonetheless executable. This not only allows for testing, but also drastically the distance left to bridge to reach a provably sound, efficient implementation. To do so, the matcher lives in the list monad: it computes recursively the decomposition according to the sub-pattern, and flat maps (Definition provided on Figure~\ref{fig:flatmap}) a function for each constructor extending the decomposition according to the head constructor.}
 
 \begin{figure}[H]
   \label{fig:match}
@@ -291,6 +292,7 @@ We implemented the \ilc{MatchAll} function, which returns all the subgraphs corr
     end.
   \end{lstlisting}
   \caption{The \ilc{MatchAll} function}
+  \label{fig:matchall}
 \end{figure}
 
 \begin{figure}[h]
@@ -303,15 +305,19 @@ We implemented the \ilc{MatchAll} function, which returns all the subgraphs corr
         | (a, b)::q => (map (fun c => (a, c)) (f b))++flat_map_r q
     end.
   \end{lstlisting}
-  \caption{The \ilc{flat_map_r} function}
+  \caption{The \ilc{flat_map_r} function \yz{Use Fixpoint in this code, nesting a fix is superficial and confusing for non coq experts}}
+  \label{fig:flatmap}
 \end{figure}
 
-\noindent
-With this, we can have a correctness and completeness proof for applying MatchAll to each constructor.
+\yz{Where are the descriptions of focus / block / heads / branches ??? To insert here}
+\yz{Ah je vois que tu mets celle de head ci-dessous. Il faut bien découpler la descsription de MatchAll de la specification du langage et la preuve de correction de matchall. Et à moins que tu manques de place, je donnerais les défs des quatres.}
 
-Proving the correctness for \ilc{Graph}, \ilc{When} and \ilc{Map} is immediate thanks to builtin lemmas on \ilc{filter} and \ilc{map}.
+\paragraph*{Specification.}
+\yzt{We have claimed that \ilc{MatchAll} \emph{returns all valid decompositions}. We capture this statement by providing specifications for each constructor of \pat, and proving they are exactly captures by \ilc{MatchAll}.}
 
-The proof mechanism for \ilc{Block}, \ilc{Head} and \ilc{Branch} are similar. We will now detail it for \ilc{Head}.
+Proving the correctness for \ilc{Graph}, \ilc{When} and \ilc{Map} is immediate thanks to builtin lemmas on \ilc{filter} and \ilc{map}. \yz{Tu n'as pas énoncé cette correction, on ne peut donc comprendre en quoi c'est immédiat !}
+
+The proof mechanism for \ilc{Block}, \ilc{Head} and \ilc{Branch} are similar. We will now detail it for \ilc{Head}.\yz{Comme dit au dessus, pousser la partie définition de heads au dessus, et garder la partie spec et preuve ici.}
 
 \ilc{MatchAll} relies on the \ilc{heads} function to match the \ilc{Head} constructor.\\
 The goal of that function is to find all the "heads", i.e. blocks without predecessors, in an OCFG.\\
@@ -368,6 +374,8 @@ Finally, we can prove the semantics for the auxiliary function, the \ilc{heads} 
       exists G', heads_sem G G' id b /\ X ∈ (MatchAll P G').
   \end{lstlisting}
 \end{figure}
+
+\yz{Décrire en anglais tout cela.}
 
 \section{Denotation}
 \label{sec:deno}
