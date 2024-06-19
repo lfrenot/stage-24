@@ -22,8 +22,9 @@
 \usepackage{float}
 \usepackage{color}
 \usepackage{listings,lstlangcoq}
-\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
 \usepackage[all]{xy}
+\usepackage{xspace}
 
 \lstdefinestyle{customcoq}{
   columns=flexible,
@@ -52,6 +53,9 @@
 \addbibresource{references.bib}
 
 \newcommand{\leon}[1]{\textcolor{blue}{#1}}
+\newcommand{\yz}[1]{\textcolor{ForestGreen}{#1}}
+\newcommand{\yzt}[1]{\textcolor{ForestGreen!50}{#1}}
+\newcommand{\cut}[1]{\textcolor{Gray!40}{#1}}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{definition}{Definition}
@@ -137,18 +141,31 @@
 \section{The pattern language}
 \label{sec:lang}
 
+\yz{De façon générale, commencer par des bullet points ou des séries de paragraphe est excellent, mais c'est important de lui donner corps en rédigeant dans un second temps un texte cohésif. Je tente une proposition rapide par exemple pour ce chapeau pour illustrer.}
+
+\yz{Remarque générale : il faut utiliser beaucoup beaucoup de macros quand on écrit du TeX. Par exemple OCFG va apparaître beaucoup, et on peut hésiter sur la façon de le typeset/écrire : macro }
+
+\yz{Il peut être pratique d'avoir un nom pour ton langage pour pouvoir y référer.}
+
+\newcommand{\ocfg}{OCFG\xspace}
+\newcommand{\pat}{\texttt{Pat}\xspace}
+
+\yzt{We now turn our attention to the central piece of our contribution: the design of \pat{}, a DSL of patterns for writing and proving correct program transformations. This DSL is composed of two core components. First, an indexed datatype provides a syntax for the user to specify how they wish to decompose an input \ocfg. Second, a \emph{matcher} provides a semantics to the language, specifying the valid decompositions associated to each pattern. Finally, we illustrate on an example the definition and semantic characterization of a pattern extracting the heads of a graph, written in our DSL.}
+
+\cut{
 In this section we will:\begin{itemize}
-  \item Define a Domain Specific Language that can capture optimizable subgraphs in an OCFG\@.
+  \item Define a Domain Specific Language that can capture optimizable subgraphs in an \ocfg\@.
   \item Introduce a matcher on this language and the corresponding semantics of each constructor.
   \item Present the Coq implementation of the language, matcher and semantics.
 \end{itemize}
+}
 
-\subsection{Defining the language}
+\subsection{\pat: a DSL for pattern matching on graphs}
 
-Our goal is to define a Domain Specific Language that can characterize optimizable subgraphs in an OCFG\@. To represent that language, we define an inductive datatype.
+\yzt{At a high level, we look for a language allowing the user to characterize and reason about optimizable subgraphs in an \ocfg. 
+To this end, we introduce \pat, a general, very expressive DSL for pattern matching on graphs. The specific patterns we are interested in from the perspective of compilation will then be expressed in \pat.}
 
 \begin{figure}[h]
-  \label{fig:pat}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
     Inductive Pattern : Type -> Type :=
     | Graph: Pattern ocfg
@@ -158,12 +175,32 @@ Our goal is to define a Domain Specific Language that can characterize optimizab
     | Block: forall  {S}, Pattern S -> Pattern (bid * blk * S)
     | Head: forall  {S}, Pattern S -> Pattern (bid * blk * S)
     | Branch: forall  {S}, Pattern S -> Pattern (bid * blk * S)
-  .
   \end{lstlisting}
+  \label{fig:pat}
   \caption{The \ilc{Pattern} datatype}
 \end{figure}
 
-Since the goal of a pattern in to capture a subgraph with a certain structure, the \ilc{Pattern} datatype has a type argument, which represents the return type of the pattern.\\
+\yz{Attention il faut TOUJOURS, équipper les objets flottants d'un label, ET y faire référence dans le texte. Tu as fait le premier, mais pas le second ici :)}
+
+\yz{Attention, l'idée d'un tel type indexé n'est pas évident pour beaucoup de lecteurs. Il est bon de prendre ton temps pour l'introduire.}
+
+Figure~\ref{fig:pat} introduces \pat{}'s syntax, defined as an inductive datatype \ilc{Pattern}.
+Because the purpose of a pattern is to decompose a graph into a certain structure, the \ilc{Pattern} datatype reflects this intention by taking as argument a type, which represents the return type of the pattern.\footnote{Such families of types are common in dependently typed languages, and are referred to as Generalized Algebraic Data Types in languages such as OCaml or Haskell.}
+This typing information is leveraged in the definition of the matcher, introduced in Section~\ref{sec:matcher}: a pattern of type \ilc{Pattern S} will be matched against elements of type \ilc{S}.
+
+\yz{Attention ici il est beaucoup plus digeste et élégant d'éviter une telle succession de paragraphes, et plutôt construire du texte. Je commence pour illustrer ce que j'imagine.}
+
+\yzt{Patterns are built out of seven constructors. The only base case is the \ilc{Graph} pattern which trivially match any graph and does not perform any decomposition. On more traditional paper presentation, it corresponds to a single hole $\square$.}
+
+\yzt{The six other constructors recursively decompose the graph, typically enriching the return type of the pattern in doing so. 
+The \ilc{When} constructor acts as a filter:
+given a pattern of return type \ilc{S}, it builds a pattern with the same return type, but takes as argument a filtering function \ilc{S -> bool} used to restrict the set of matching graphs to those satisfying the condition.
+The \ilc{Map} constructor simply hardcodes functoriality into the datatype, allowing for post-processing the output of a pattern by a pure function.
+}
+
+\yz{TODO: finir d'intégrer les paragraphes ci-après dans le texte ci-dessus.}
+
+
 Each constructor adds to the return types of the following constructors, with the base case \ilc{Graph} accepting any graph.
 
 We will now introduce each constructor and their function.
@@ -197,20 +234,26 @@ It takes a pattern as argument to match against the rest of the graph, and retur
 The \ilc{Head} constructor matches any block of the graph without predecessors.
 It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.\\
 Note that this constructor could not be directly implemented as a \ilc{When (Block \_) \_} since it depends on the rest of the graph, which \ilc{When} wouldn't have access to.
+\yz{TODO: expand on this note, detailing what filter you would want to write and pointing out why you can't precisely.
+In particular, explain that you could write \ilc{When (Block Graph) (fun '(i,bk,g) => is_head i g)}, but not \ilc{fun p => When (Block p) (fun s => ???)}, and why it may matter.}
 
 \paragraph{\ilc{Branch}}
 
 The \ilc{Branch} constructor matches any block of the graph whose terminator is a conditional jump.
 It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.
-This constructor could be implemented as a \ilc{When (Block \_) \_}, but has been implemented directly because \leon{???}.
+This constructor could be implemented as a \ilc{When (Block \_) \_}, but has been implemented directly because \leon{???}.\yz{Give the exact definition in terms of when/block, and indeed justify.}
 
-\subsection*{Pattern example}
+\yz{Je pense qu'il faut insérer ici une discussion assez généreuse sur le choix de ce jeu de constructeurs : remarquer qu'il y a de la redondance, en pointant du doigt que tout pattern fixé peut être encodé avec Focus, Graph et When (à vérifier que c'est vrai) par exemple, mais pas des familles de patterns qui composent; remarquer que Map parait assez naturel, mais que l'on en a pas d'usage en ce moment; expliquer que l'on cherche un point de design alliant facilité d'utilisation et facilité de développer la méta-théorie, et que ce n'est pas encore fixé dans le marbre.}
 
-With these constructors, we can build patterns that characterize subgraphs.
+\paragraph*{An example of pattern: block fusion.}
+We illustrate the use of \pat{} to implement\footnote{Or rather, to \emph{specify} such an optimization. We discuss briefly executability in conclusion.} a bloc fusion optimization. 
+That is: fusing two blocks whose execution always follow each other into a single block. \yz{Explain the optimisation in a little bit more details (unless you plan on introducing it in more detail earlier in the paper, in which case put a reference to it).}
 
-For example, we want to capture a subgraph for the \ilc{BlockFusion} fusion optimization. That is: fusing two blocks whose execution always follow each other into a single block.\\
-We can recognize the applicable subgraphs with the pattern \ilc{When (Block (Head Graph)) BlockFusion\_f}.\\
-\ilc{Block} matches any first block, then \ilc{Head} matches a block that has no predecessors (except possibly \ilc{Block}), and finally \ilc{When _ BlockFusion\_f} sets additional conditions on the two blocks for the optimization.
+\yz{Note: it's almost never a good idea to force a return carriage via a double slash.}
+
+The applicable subgraphs are specified with the pattern \ilc{When (Block (Head Graph)) BlockFusion\_f}. \yz{Name the pattern, like \ilc{pfusion} for instance, you will want to refer to it later to give its spec.}
+The pattern starts by the \ilc{Block} to match any block \ilc{bk} \yz{(What does first mean here? I think you just mean to say that's the first thing you match on. I would rather give a name to this block, and not refer to it by the name of the pattern!)}. Then, \ilc{Head} matches a block \ilc{head} that has no predecessors (except possibly \ilc{bk} as it is not in scope of the pattern anymore), and finally \ilc{When _ BlockFusion\_f} sets additional constraints on the two blocks required for the optimization to be valid.\yz{Give the code for BlockFusion\_f and explain these additional constraints in details.}
+
 \begin{figure}[h]
   \xymatrix{
     &&&&\\
@@ -221,11 +264,15 @@ We can recognize the applicable subgraphs with the pattern \ilc{When (Block (Hea
     \save "2,3"."4,5"*[F--]\frm{} \restore
   }
   \caption{The \ilc{BlockFusion} pattern}
+  \label{fig:fusion}
 \end{figure}
 
-\subsection{Matcher functions}
+\yz{Refer to and explain the figure! "Figure~2 illustrate graphically the shape of the graph decompositions that match \ilc{pfusion} ..." Use the names suggested above, and explain the meaning of the different arrows.}
 
-To use these patterns, we need to define a matcher function. That is, a function that takes a pattern and an OCFG as argument, and returns a subgraph, or each subgraph, that matches that pattern.
+\subsection{Matcher functions}
+\label{sec:matcher}
+
+We now turn to the question of defining the semantics of our patterns, via a \emph{matcher function}. That is, a function that takes a pattern and an OCFG as argument, and returns a subgraph, or each subgraph, that matches that pattern.
 
 We implemented the \ilc{MatchAll} function, which returns all the subgraphs corresponding to a given pattern.
 
