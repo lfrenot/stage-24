@@ -116,7 +116,7 @@ For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Comp
 \paragraph{The Contribution of This Work}
 
 \begin{itemize}
-  \item \leon{Design d'un langage de patterns + Implémentation naive d'un matcher}
+  \item \leon{Design d'un DSL de patterns: \pat + Implémentation naive d'un matcher}
   \item \leon{Preuve d'un théorème central pour prouver des optims (sur un CFG)}
   \item \leon{Utiliser ce langage pour block fusion + preuve de correction}
 \end{itemize}
@@ -178,6 +178,8 @@ Finally, to interpret the semantics of the different effects of its syntax, Vell
 
 \yzt{We now turn our attention to the central piece of our contribution: the design of \pat{}, a DSL of patterns for writing and proving correct program transformations. This DSL is composed of two core components. First, an indexed datatype provides a syntax for the user to specify how they wish to decompose an input \ocfg. Second, a \emph{matcher} provides a semantics to the language, specifying the valid decompositions associated to each pattern. Finally, we illustrate on an example the definition and semantic characterization of a pattern extracting the heads of a graph, written in our DSL.}
 
+In this section we will focus on our main contribution: the design of \pat{}, a DSL of patterns for writing and proving correct program transformations. This DSL is composed of two core components. The first is a datatype, \ilc{Pattern}, which provides a syntax for the user to specify how they wish to decompose an input \ocfg. The second is a \emph{matcher} function, which provides semantics to apply the language to an \ocfg{}, specifying the valid decompositions associated to each pattern. Finally, we illustrate on an example the definition and semantic characterization of a pattern extracting the heads of a graph, written in our DSL\@.
+
 \cut{
 In this section we will:\begin{itemize}
   \item Define a Domain Specific Language that can capture optimizable subgraphs in an \ocfg\@.
@@ -202,11 +204,11 @@ To this end, we introduce \pat, a general, very expressive DSL for pattern match
     | Head: forall  {S}, Pattern S -> Pattern (bid * blk * S)
     | Branch: forall  {S}, Pattern S -> Pattern (bid * blk * S)
   \end{lstlisting}
-  \label{fig:pat}
   \caption{The \ilc{Pattern} datatype}
+  \label{fig:pat}
 \end{figure}
 
-\yz{Attention il faut TOUJOURS, équipper les objets flottants d'un label, ET y faire référence dans le texte. Tu as fait le premier, mais pas le second ici :)}
+\yz{Attention il faut TOUJOURS, équipper les objets flottants d'un label, ET y faire référence dans le texte. Tu as fait le premier, mais pas le second ici :}
 
 \yz{Attention, l'idée d'un tel type indexé n'est pas évident pour beaucoup de lecteurs. Il est bon de prendre ton temps pour l'introduire.}
 
@@ -223,6 +225,21 @@ The \ilc{When} constructor acts as a filter:
 given a pattern of return type \ilc{S}, it builds a pattern with the same return type, but takes as argument a filtering function \ilc{S -> bool} used to restrict the set of matching graphs to those satisfying the condition.
 The \ilc{Map} constructor simply hardcodes functoriality into the datatype, allowing for post-processing the output of a pattern by a pure function.
 }
+
+The \ilc{Pattern} type is build of seven constructors. The only base case is the \ilc{Graph} constructor which trivially match any graph and does not perform any decomposition. On more traditional paper presentation, it corresponds to a single hole $\square$.
+
+The six other constructors recursively decompose the graph, typically enriching the return type of the pattern in doing so. 
+The \ilc{When} constructor acts as a filter:
+given a pattern of return type \ilc{S}, it builds a pattern with the same return type, but takes as argument a filtering function \ilc{S -> bool} used to restrict the set of matching graphs to those satisfying the condition.
+The \ilc{Map} constructor simply hardcodes functoriality into the datatype, allowing for post-processing the output of a pattern by a pure function. That is: given a return type \ilc{S} and a function \ilc{S -> T}, it builds a pattern of return type \ilc{T}.
+The \ilc{Focus} constructor, given a pattern \ilc{P}, builds a pattern that tries to match \ilc{P} on any subset of the graph given as argument.
+\leon{or: The \ilc{Focus} constructor removes any subgraph from the graph and matches the pattern given as argument against the rest.}
+The \ilc{Block} constructor removes any block from the graph and matches the pattern given as argument against the rest of the graph.
+The \ilc{Head} constructor removes a block without predecessors from the graph and matches the pattern given as argument against the rest of the graph.
+The \ilc{Branch} constructor removes a block whose terminator is a branch from the graph and matches the pattern given as argument against the rest of the graph.
+
+This set of patterns is not minimal. Indeed, \ilc{fun p => Block p} could be written as \ilc{fun p => When (Focus p) (fun '(l, _) => size l = 1)}, and \ilc{fun p => Branch p} could be written as \ilc{fun p => When (Block p) (fun '(id, b, _) => term_is_branch b)}.
+
 
 \yz{TODO: finir d'intégrer les paragraphes ci-après dans le texte ci-dessus.}
 
