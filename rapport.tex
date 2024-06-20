@@ -61,6 +61,9 @@
 \newtheorem{definition}{Definition}
 \newtheorem{example}{Example}
 
+\newcommand{\ocfg}{OCFG\xspace}
+\newcommand{\pat}{\texttt{Pat}\xspace}
+
 \hypersetup{colorlinks=true, linkcolor=black}
 
 \begin{document}
@@ -103,7 +106,7 @@
 \label{sec:intro}
 
 \indent
-\leon{Debut intro: M2, 20 semaines, LIP, CASH. Yannick Zakowski \& Gabriel Radanne. Goal.}\\
+For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Computer Science laboratory in ENS Lyon. This internship was supervised by Yannick Zakowski and Gabriel Radanne in the Compilation and Analysis, Software and Hardware Laboratory of the LIP. The goal of this internship was to design and implement a pattern language over control flow graphs to provide a framework for formal proofs on optimizations.
 
 \leon{Compilation certifiée AJD}
 
@@ -111,32 +114,58 @@
 \leon{Importance de la compilation certifiée, et surtout de certifier les optims.}
 
 \paragraph{The Contribution of This Work}
+
 \begin{itemize}
   \item \leon{Design d'un langage de patterns + Implémentation naive d'un matcher}
   \item \leon{Preuve d'un théorème central pour prouver des optims (sur un CFG)}
-  \item \leon{Utiliser ce langage pour deux optims + preuves de correction}
+  \item \leon{Utiliser ce langage pour block fusion + preuve de correction}
 \end{itemize}
 \paragraph{Premier exemple: CCstP}
 
-\section{Key concepts}
-\label{sec:concepts}
+\section{Background}
+\label{sec:background}
 
-\subsection{LLVM and Vellvm}
+\subsection{Interaction Trees}
 
-\leon{llvm (très rapide)}
+Interaction Trees (ITrees) are a co-inductive structure designed to represent the dynamic behaviors of a computation. The goal of ITrees is to model recursive and effectful programs, including divergent computations.\\
+Figure~\ref{fig:itree} show the Coq definition of ITrees. An instance of the type features an \emph{event} type \ilc{E: Type -> Type}, and a return type \ilc{R: Type}. The definition uses three constructors: \ilc{Ret} corresponds to halting and returning a value of type \ilc{R}; \ilc{Tau} corresponds to a \emph{silent step}, i.e. an internal computation, followed by computation \ilc{t}; and \ilc{Vis} which is a \emph{visible event}, it describes an external computation \ilc{e} which returns a value of type \ilc{A}, and a continuation \ilc{k} which depends on that return value.
 
-\leon{vellvm: but, niveaux d'interprétation (préciser celui auquel on se place)}
+\begin{figure}[h]
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+CoInductive itree (E : Type -> Type) (R : Type) : Type :=
+  | Ret (r : R)
+  | Tau (t : itree E R)
+  | Vis {A : Type} (e : E A) (k : A -> itree E R).
+  \end{lstlisting}
+  \caption{The \ilc{itree} datatype}
+  \label{fig:itree}
+\end{figure}
 
-\begin{itemize}
-  \item \leon{denotational proofs, programmes ouverts $\rightarrow$ utilisera OCFG pour open CFG}
-  \item \leon{structure en couche, optimisations qui conservent les traces d'interaction}
-\end{itemize}
+To reason over ITrees, we have multiple notions of \emph{bisimulation}. The most relevant one is \emph{weak bisimulation}, noted \ilc{t1 ≈ t2}. We say that \ilc{t1 ≈ t2} if they return the same value, and have the same visible events. This relation is an equivalence ``up-to-Tau'' in the sense that we have \ilc{Tau t ≈ t} and \ilc{t ≈ Tau t}. This equivalence be refined up to a relationship $R : A \rightarrow B \rightarrow Prop$: we then have $\ilc{Ret}\; a \approx_R \ilc{Ret}\; b \iff R\; a\; b$. 
 
-\leon{pourquoi travailler sur vellvm}
+Effects can easily be added or removed from the semantics of an ITree. The \ilc{Vis} constructor represents \emph{uninterpreted events}. By defining an \emph{event handler}, semantics are assigned to these events. Interpreting an ITree then consists of folding that handler over the ITree. This allows the semantics of ITrees to be \emph{modular}.
 
-\subsection{ITrees}
+Furthermore, the semantics of ITrees are also \emph{compositional} with the use of \emph{combinators}. For example, \ilc{bind: itree E A -> (A -> itree E B) -> itree E B} allows composing ITrees (with the use of continuations).
+Other combinators include \ilc{iter: (A -> itree E (A+B)) -> (A -> itree E B)} to encode the iterations and hide the co-induction (by hiding each body step in a Tau), and \ilc{mrec} for mutual-recursive combinators. 
 
-\leon{utilité, coinduction, structure, mechanisme de preuve}
+Unlike similar projects, which rely on \emph{operational semantics} and simulation diagrams, ITrees rely on \emph{denotational semantics}. That is, it is based on equations that can be used to prove bisimulation. These equations allow the user to reason equationally, hiding the co-inductive reasoning and the definition of the weak bisimulation. The compositionality of the semantics also allow simpler reasoning than operational semantics, since program counter and similar notions are lifted away.
+
+\subsection{Vellvm}
+
+\leon{TODO: figures (vir syntax and intrep stack), emphs}
+
+The goal of the Vellvm project is to formally define the semantic of the LLVM IR and construct verified
+components for that formalization.
+
+LLVM is a compiler infrastructure designed around a language-independent intermediate representation (IR). It is used to develop frontends for programming languages and backends for instruction set architectures.\\
+The LLVM IR is a RISC-like low level instruction set, but also features high-level informations. This duality allows it to represent any program while still permuting analysis and optimizations. It is based on control flow-graphs, with named labels and registers, and guarantees Single Static Assignment (SSA) form, which is key to many static analyses and optimizations. The LLVM IR is statically typed, and features integer-pointer casts.
+Optimizations ans analysis on the LLVM IR are done through successive analysis and transformation passes.
+
+Vellvm introduces Verified LLVM IR (VIR), a realistic subset of the LLVM IR. Figure~\ref{vir} shows a subset of VIR's syntax. VIR's semantics are defined with ITrees: each element of VIR's syntax is represented by a corresponding ITree. Each effect (except control flow) is captured by a \ilc{Vis} event, which can be interpreted later. This semantic includes many non-trivial features of LLVM IR, including pointers, LLVM's phi-nodes and undefined behaviors.
+
+Since the semantics of a block or set of blocks can be defined without relying on a ``complete'' CFG, it is possible to use ``open control-flow graphs'' (\ocfg), which is simply a set of blocks without a defined entry point.
+
+Finally, to interpret the semantics of the different effects of its syntax, Vellvm uses a stack of interpreters. It allows to gradually introduce external elements to the semantic (intrinsics, global and local environments, \ldots). Figure~\ref{interp} show that stack of interpretation. The final levels split between a \emph{propositional} model, which interprets the non-determinism of LLVM IR's undefined behaviors, and a \emph{executable} model, which implements one of these behaviors.
 
 \section{The pattern language}
 \label{sec:lang}
@@ -146,9 +175,6 @@
 \yz{Remarque générale : il faut utiliser beaucoup beaucoup de macros quand on écrit du TeX. Par exemple OCFG va apparaître beaucoup, et on peut hésiter sur la façon de le typeset/écrire : macro }
 
 \yz{Il peut être pratique d'avoir un nom pour ton langage pour pouvoir y référer.}
-
-\newcommand{\ocfg}{OCFG\xspace}
-\newcommand{\pat}{\texttt{Pat}\xspace}
 
 \yzt{We now turn our attention to the central piece of our contribution: the design of \pat{}, a DSL of patterns for writing and proving correct program transformations. This DSL is composed of two core components. First, an indexed datatype provides a syntax for the user to specify how they wish to decompose an input \ocfg. Second, a \emph{matcher} provides a semantics to the language, specifying the valid decompositions associated to each pattern. Finally, we illustrate on an example the definition and semantic characterization of a pattern extracting the heads of a graph, written in our DSL.}
 
@@ -441,7 +467,7 @@ Theorem denote_ocfg_equiv
   \caption{The \ilc{denote_ocfg_equiv} theorem}
 \end{figure}
 
-\subsection{motivation for Block Fusion}
+\subsection{Motivations for Block Fusion}
 
 In this section, we will define the Block Fusion optimization, describe a corresponding OCFG pattern,
 and outline the proof of correctness of the optimization using the pattern.
@@ -458,7 +484,7 @@ This optimization is relevant for three main reasons:\begin{itemize}
 
 In the previous section, we already gave a pattern for \ilc{BlockFusion}, we will use a slight variation, which allows further composing:\\\ilc{Definition BlockFusion {S} (P: Pattern S) := When (Block (Head P)) BlockFusion_f.}
 
-\subsection{Block Fusion for real actually I swear}
+% \subsection{The semantics of Block Fusion}
 
 \ilc{BlockFusion_f} has two conditions:\begin{itemize}
   \item the terminator of the first block is an absolute jump to the second block,
