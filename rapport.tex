@@ -130,7 +130,7 @@ For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Comp
 Interaction Trees (ITrees) are a co-inductive structure designed to represent the dynamic behaviors of a computation. The goal of ITrees is to model recursive and effectful programs, including divergent computations.\\
 Figure~\ref{fig:itree} show the Coq definition of ITrees. An instance of the type features an \emph{event} type \ilc{E: Type -> Type}, and a return type \ilc{R: Type}. The definition uses three constructors: \ilc{Ret} corresponds to halting and returning a value of type \ilc{R}; \ilc{Tau} corresponds to a \emph{silent step}, i.e. an internal computation, followed by computation \ilc{t}; and \ilc{Vis} which is a \emph{visible event}, it describes an external computation \ilc{e} which returns a value of type \ilc{A}, and a continuation \ilc{k} which depends on that return value.
 
-\begin{figure}[h]
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 CoInductive itree (E : Type -> Type) (R : Type) : Type :=
   | Ret (r : R)
@@ -193,7 +193,7 @@ In this section we will:\begin{itemize}
 \yzt{At a high level, we look for a language allowing the user to characterize and reason about optimizable subgraphs in an \ocfg. 
 To this end, we introduce \pat, a general, very expressive DSL for pattern matching on graphs. The specific patterns we are interested in from the perspective of compilation will then be expressed in \pat.}
 
-\begin{figure}[h]
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
     Inductive Pattern : Type -> Type :=
     | Graph: Pattern ocfg
@@ -208,23 +208,9 @@ To this end, we introduce \pat, a general, very expressive DSL for pattern match
   \label{fig:pat}
 \end{figure}
 
-\yz{Attention il faut TOUJOURS, équipper les objets flottants d'un label, ET y faire référence dans le texte. Tu as fait le premier, mais pas le second ici :}
-
-\yz{Attention, l'idée d'un tel type indexé n'est pas évident pour beaucoup de lecteurs. Il est bon de prendre ton temps pour l'introduire.}
-
 Figure~\ref{fig:pat} introduces \pat{}'s syntax, defined as an inductive datatype \ilc{Pattern}.
 Because the purpose of a pattern is to decompose a graph into a certain structure, the \ilc{Pattern} datatype reflects this intention by taking as argument a type, which represents the return type of the pattern.\footnote{Such families of types are common in dependently typed languages, and are referred to as Generalized Algebraic Data Types in languages such as OCaml or Haskell.}
 This typing information is leveraged in the definition of the matcher, introduced in Section~\ref{sec:matcher}: a pattern of type \ilc{Pattern S} will be matched against elements of type \ilc{S}.
-
-\yz{Attention ici il est beaucoup plus digeste et élégant d'éviter une telle succession de paragraphes, et plutôt construire du texte. Je commence pour illustrer ce que j'imagine.}
-
-\yzt{Patterns are built out of seven constructors. The only base case is the \ilc{Graph} pattern which trivially match any graph and does not perform any decomposition. On more traditional paper presentation, it corresponds to a single hole $\square$.}
-
-\yzt{The six other constructors recursively decompose the graph, typically enriching the return type of the pattern in doing so. 
-The \ilc{When} constructor acts as a filter:
-given a pattern of return type \ilc{S}, it builds a pattern with the same return type, but takes as argument a filtering function \ilc{S -> bool} used to restrict the set of matching graphs to those satisfying the condition.
-The \ilc{Map} constructor simply hardcodes functoriality into the datatype, allowing for post-processing the output of a pattern by a pure function.
-}
 
 The \ilc{Pattern} type is build of seven constructors. The only base case is the \ilc{Graph} constructor which trivially match any graph and does not perform any decomposition. On more traditional paper presentation, it corresponds to a single hole $\square$.
 
@@ -233,130 +219,141 @@ The \ilc{When} constructor acts as a filter:
 given a pattern of return type \ilc{S}, it builds a pattern with the same return type, but takes as argument a filtering function \ilc{S -> bool} used to restrict the set of matching graphs to those satisfying the condition.
 The \ilc{Map} constructor simply hardcodes functoriality into the datatype, allowing for post-processing the output of a pattern by a pure function. That is: given a return type \ilc{S} and a function \ilc{S -> T}, it builds a pattern of return type \ilc{T}.
 The \ilc{Focus} constructor, given a pattern \ilc{P}, builds a pattern that tries to match \ilc{P} on any subset of the graph given as argument.
-\leon{or: The \ilc{Focus} constructor removes any subgraph from the graph and matches the pattern given as argument against the rest.}
-The \ilc{Block} constructor removes any block from the graph and matches the pattern given as argument against the rest of the graph.
-The \ilc{Head} constructor removes a block without predecessors from the graph and matches the pattern given as argument against the rest of the graph.
-The \ilc{Branch} constructor removes a block whose terminator is a branch from the graph and matches the pattern given as argument against the rest of the graph.
+The \ilc{Block} constructor extracts any block from the graph and matches the pattern given as argument against the rest of the graph.
+The \ilc{Head} constructor extracts a block without predecessors from the graph and matches the pattern given as argument against the rest of the graph.
+The \ilc{Branch} constructor extracts a block whose terminator is a branch from the graph and matches the pattern given as argument against the rest of the graph.
 
-This set of patterns is not minimal. Indeed, \ilc{fun p => Block p} could be written as \ilc{fun p => When (Focus p) (fun '(l, _) => size l = 1)}, and \ilc{fun p => Branch p} could be written as \ilc{fun p => When (Block p) (fun '(id, b, _) => term_is_branch b)}.
+This set of patterns is not minimal. Indeed, \ilc{fun p => Block p} could be written as\\\ilc{fun p => When (Focus p) (fun '(l, _) => size l = 1)}, and \ilc{fun p => Branch p} could be written as \ilc{fun p => When (Block p) (fun '(id, b, _) => term_is_branch b)}. Finding a minimal set was not a goal of the DSL as the main concern was ease of use, both for the user, for designing a matcher, and for establishing the meta-theory. 
 
+\ilc{Map} and the functoriality it brings feel natural to add and are easy to implement and prove. But we have no immediate use for it at this time. An argument against \ilc{Map} could be made, as every other constructor allows working backwards to rebuild the graph by recombining the extracted part (as long as it matches with something).
 
-\yz{TODO: finir d'intégrer les paragraphes ci-après dans le texte ci-dessus.}
+\ilc{Map} also makes \ilc{Head} a minimal constructor. Indeed, while \ilc{Head Graph} can be written as \ilc{When (Block Graph) (fun '(id, b, g) => is_head id g)}, there is no function f such that\\\ilc{Head Map Graph (fun _ => ())} can be written as \ilc{When (Block Map (fun _ => ())) f}, since we loose the information on the rest of the graph.
 
-
-Each constructor adds to the return types of the following constructors, with the base case \ilc{Graph} accepting any graph.
-
-We will now introduce each constructor and their function.
-
-\paragraph{\ilc{Graph}}
-
-The \ilc{Graph} constructor is the ``base'' case that matches any graph. It does not take any extra argument, and returns the graph given as argument.
-
-\paragraph{\ilc{When}}
-
-The \ilc{When} constructor allows adding a boolean condition to a pattern.
-It takes a pattern and a corresponding boolean function as argument, and returns what the patterns matched if it fulfils the condition.
-
-\paragraph{\ilc{Map}}
-
-The \ilc{Map} constructor allows mapping a function onto a pattern's return type.
-It takes a pattern and a function as argument, and returns the image of the function by what the patterns matched.
-
-\paragraph{\ilc{Focus}}
-
-The \ilc{Focus} constructor matches any subgraph.
-It takes a pattern as argument to match against the rest of the graph, and returns the matched subgraph and what the pattern matched.
-
-\paragraph{\ilc{Block}}
-
-The \ilc{Block} constructor matches any single block in the graph.
-It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.
-
-\paragraph{\ilc{Head}}
-
-The \ilc{Head} constructor matches any block of the graph without predecessors.
-It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.\\
-Note that this constructor could not be directly implemented as a \ilc{When (Block \_) \_} since it depends on the rest of the graph, which \ilc{When} wouldn't have access to.
-\yz{TODO: expand on this note, detailing what filter you would want to write and pointing out why you can't precisely.
-In particular, explain that you could write \ilc{When (Block Graph) (fun '(i,bk,g) => is_head i g)}, but not \ilc{fun p => When (Block p) (fun s => ???)}, and why it may matter.}
-
-\paragraph{\ilc{Branch}}
-
-The \ilc{Branch} constructor matches any block of the graph whose terminator is a conditional jump.
-It takes a pattern as argument to match against the rest of the graph, and returns the matched block and what the pattern matched.
-This constructor could be implemented as a \ilc{When (Block \_) \_}, but has been implemented directly because \leon{???}.\yz{Give the exact definition in terms of when/block, and indeed justify.}
-
-\yz{Je pense qu'il faut insérer ici une discussion assez généreuse sur le choix de ce jeu de constructeurs : remarquer qu'il y a de la redondance, en pointant du doigt que tout pattern fixé peut être encodé avec Focus, Graph et When (à vérifier que c'est vrai) par exemple, mais pas des familles de patterns qui composent; remarquer que Map parait assez naturel, mais que l'on en a pas d'usage en ce moment; expliquer que l'on cherche un point de design alliant facilité d'utilisation et facilité de développer la méta-théorie, et que ce n'est pas encore fixé dans le marbre.}
+While a user will want to work using closed instances of pattern, that is objects of type \ilc{Pattern S}, our proofs work on open instances of pattern, that is objects of type\\\ilc{Pattern S -> Pattern (f S)}, to allow compositionality. We will call these objects \emph{opened patterns} \leon{ou open patterns?}. Note that constructors other than \ilc{Graph} are opened patterns.
 
 \paragraph*{An example of pattern: block fusion.}
-We illustrate the use of \pat{} to implement\footnote{Or rather, to \emph{specify} such an optimization. We discuss briefly executability in conclusion.} a bloc fusion optimization. 
-That is: fusing two blocks whose execution always follow each other into a single block. \yz{Explain the optimisation in a little bit more details (unless you plan on introducing it in more detail earlier in the paper, in which case put a reference to it).}
+We illustrate the use of \pat{} to implement\footnote{Or rather, to \emph{specify} such an optimization. We discuss briefly executability in conclusion.} a bloc fusion optimization.
+Block Fusion typically consists of finding two blocks (A and B) such that A is the only predecessors of B, B is the only successor of A, and B is not the graph's entry point. Since an execution of A is always followed by B, and an execution of B is always preceded by A, we can replace them by a single block that follows the execution of both A and B.
 
-\yz{Note: it's almost never a good idea to force a return carriage via a double slash.}
+The applicable subgraphs are specified with the pattern\\\ilc{pfusion := When (Block (Head Graph)) BlockFusion\_f}.
+The pattern starts by the \ilc{Block} to match any block \ilc{A} Then, \ilc{Head} matches a block \ilc{B} that has no predecessors (except possibly \ilc{A} as it is not in scope of the pattern anymore), and finally \ilc{When _ BlockFusion\_f} asserts that \ilc{B} is the only successor of \ilc{A}.
 
-The applicable subgraphs are specified with the pattern \ilc{When (Block (Head Graph)) BlockFusion\_f}. \yz{Name the pattern, like \ilc{pfusion} for instance, you will want to refer to it later to give its spec.}
-The pattern starts by the \ilc{Block} to match any block \ilc{bk} \yz{(What does first mean here? I think you just mean to say that's the first thing you match on. I would rather give a name to this block, and not refer to it by the name of the pattern!)}. Then, \ilc{Head} matches a block \ilc{head} that has no predecessors (except possibly \ilc{bk} as it is not in scope of the pattern anymore), and finally \ilc{When _ BlockFusion\_f} sets additional constraints on the two blocks required for the optimization to be valid.\yz{Give the code for BlockFusion\_f and explain these additional constraints in details.}
-
-\begin{figure}[h]
+\begin{figure}
   \xymatrix{
     &&&&\\
-    &*+[F]\txt{Block\\Any block}\ar[dd]&&\;\ar@{-->}`u[ul] `[ll] [ll]&\\
-    *+[F.]\txt{BlockFusion\_f\\Sets conditions on\\the two blocks}\ar@{..>}`u[ur] [ur]\ar@{..>}`d[dr] [dr]&&&\txt{Graph}\\
-    &*+[F]\txt{Head\\No predecessors\\once Block is removed}\ar@{-->}`d[dr] `[rr] [rr]&&&\\ 
+    &*+[F]\txt{\ilc{A}\\\ilc{Block}: any block}\ar[dd]&&\;\ar@{-->}`u[ul] `[ll] [ll]&\\
+    *+[F.]\txt{\ilc{When _ BlockFusion_f}\\ asserts that \ilc{B} is\\the only successor of \ilc{A}}\ar@{..>} [r]&&&\txt{Graph}\\
+    &*+[F]\txt{\ilc{B}\\\ilc{Head}: no predecessors\\once \ilc{A} is removed}\ar@{-->}`d[dr] `[rr] [rr]&&&\\ 
     &&&
     \save "2,3"."4,5"*[F--]\frm{} \restore
   }
-  \caption{The \ilc{BlockFusion} pattern}
+  \caption{The \ilc{pfusion} pattern}
   \label{fig:fusion}
 \end{figure}
 
-\yz{Refer to and explain the figure! "Figure~2 illustrate graphically the shape of the graph decompositions that match \ilc{pfusion} ..." Use the names suggested above, and explain the meaning of the different arrows.}
+Figure~\ref{fig:fusion} illustrates graphically the shape of the graph decompositions that match \ilc{pfusion}. The full lines (\ilc{A, B} and the arrow between them) represent the parts fixed by \ilc{pfusion}. The dashed lines refer to parts that are allowed, but not necessarily them: other blocks in the graphs with arrows coming towards \ilc{A} or from \ilc{B} (but not in the middle of them). The dotted lines 
+show the \ilc{When} constructor.
+% \yz{Refer to and explain the figure! "Figure~2 illustrate graphically the shape of the graph decompositions that match \ilc{pfusion} ..." Use the names suggested above, and explain the meaning of the different arrows.}
 
 \subsection{Matcher functions}
 \label{sec:matcher}
 
 We now turn to the question of defining the semantics of our patterns, via a \emph{matcher function}. 
-\yzt{Such function takes a pattern \ilc{p} and an \ocfg{} \ilc{G} as arguments, and returns a set of decompositions of \ilc{G} that match \ilc{p}.}
-\yzt{We have mainly focused so far on \emph{specifying} patterns, by implementing a matcher that returns \emph{all} valid decompositions. 
-Although rather meant as a specification than as a realistic implementation, the \ilc{MatchAll} function, depicted in Figure~\ref{fig:matchall}, is nonetheless executable. This not only allows for testing, but also drastically the distance left to bridge to reach a provably sound, efficient implementation. To do so, the matcher lives in the list monad: it computes recursively the decomposition according to the sub-pattern, and flat maps (Definition provided on Figure~\ref{fig:flatmap}) a function for each constructor extending the decomposition according to the head constructor.}
+A matcher function takes a pattern \ilc{p} and an \ocfg{} \ilc{G} as arguments, and returns a set of decompositions of \ilc{G} that match \ilc{p}.
+We have mainly focused on \emph{specifying} patterns, by implementing a matcher that returns \emph{all} valid decompositions. 
+Although rather meant as a specification than as a realistic implementation, the \ilc{MatchAll} function, depicted in Figure~\ref{fig:matchall}, is nonetheless executable. This not only allows for testing, but also drastically reduces the distance left to bridge to have an efficient implementation that is provably sound. To do so, the matcher lives in the list monad: it computes recursively the decomposition according to the sub-pattern, and flat maps (Definition provided on Figure~\ref{fig:flatmap}) a function for each constructor extending the decomposition according to the head constructor.
 
-\begin{figure}[H]
+\begin{figure}
   \label{fig:match}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Fixpoint MatchAll {S} (P: Pattern S) (g: ocfg) : list S :=
-    match P with
-      | Graph => [g]
-      | When p f => filter (fun x => f x = true) (MatchAll p g) 
-      | Map p f => map f (MatchAll p g)
-      | Focus p => flat_map_r (MatchAll p) (focus g)
-      | Block p => flat_map_r (MatchAll p) (blocks g)
-      | Head p => flat_map_r (MatchAll p) (heads g)
-      | Branch p => flat_map_r (MatchAll p) (branches g)
-    end.
+Fixpoint MatchAll {S} (P: Pattern S) (g: ocfg) : list S :=
+  match P with
+    | Graph => [g]
+    | When p f => filter (fun x => f x = true) (MatchAll p g) 
+    | Map p f => map f (MatchAll p g)
+    | Focus p => flat_map_r (MatchAll p) (focus g)
+    | Block p => flat_map_r (MatchAll p) (blocks g)
+    | Head p => flat_map_r (MatchAll p) (heads g)
+    | Branch p => flat_map_r (MatchAll p) (branches g)
+  end.
   \end{lstlisting}
   \caption{The \ilc{MatchAll} function}
   \label{fig:matchall}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}
   \label{fig:fmapr}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Definition flat_map_r {A B C} (f : B -> list C) :=
-      fix flat_map_r (l : list (A*B)) : list (A*C) :=
-        match l with
-        | [] => []
-        | (a, b)::q => (map (fun c => (a, c)) (f b))++flat_map_r q
-    end.
+Definition flat_map_r {A B C} (f : B -> list C) (l : list (A*B)) : list (A*C) :=
+  match l with
+    | [] => []
+    | (a, b)::q => (map (fun c => (a, c)) (f b))++flat_map_r f q
+end.
   \end{lstlisting}
-  \caption{The \ilc{flat_map_r} function \yz{Use Fixpoint in this code, nesting a fix is superficial and confusing for non coq experts}}
+  \caption{The \ilc{flat_map_r} function}
   \label{fig:flatmap}
 \end{figure}
+\begin{figure}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Definition focus_aux id b acc : list ocfg := acc ++ (map (insert id b) acc).
+
+Definition focus_aux2 (G G1: ocfg) : ocfg*ocfg := (G1, G ∖ G1).
+
+Definition focus (G: ocfg) := map (focus_aux2 G) (map_fold focus_aux [∅] G).
+  \end{lstlisting}
+  \caption{The \ilc{focus} function}
+  \label{fig:focus_fun}
+\end{figure}
+\begin{figure}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Definition blocks_aux (G: ocfg) : (bid*blk) -> (bid*blk*ocfg) :=
+  fun '(id, b) => (id, b, delete id G).
+
+Definition blocks (G: ocfg): list (bid*blk*ocfg) :=
+  map (blocks_aux G) (map_to_list G).
+  \end{lstlisting}
+  \caption{The \ilc{blocks} function}
+  \label{fig:blocks_fun}
+\end{figure}
+\begin{figure}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Definition heads_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
+  if is_empty (predecessors id G)
+  then (id, b, delete id G)::acc
+  else acc.
+
+Definition heads (G: ocfg): list (bid*blk*ocfg) := map_fold (heads_aux G) [] G.
+  \end{lstlisting}
+  \caption{The \ilc{heads} function}
+  \label{fig:heads_fun}
+\end{figure}
+\begin{figure}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Definition branches_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
+  match b.(blk_term) with
+    | TERM_Br _ l r => (id, b, (delete id G))::acc
+    | _ => acc
+  end.
+
+Definition branches (G: ocfg): list (bid*blk*ocfg) := map_fold (branches_aux G) [] G.
+  \end{lstlisting}
+  \caption{The \ilc{branches} function}
+  \label{fig:branches_fun}
+\end{figure}
+
+For the extracting constructors (\ilc{Focus, Block, Head} and \ilc{Branch}), \ilc{MatchAll} also relies on decomposition functions, whose definitions are given in Figures~\ref{fig:focus_fun} to \ref{fig:branches_fun}.
 
 \yz{Where are the descriptions of focus / block / heads / branches ??? To insert here}
 \yz{Ah je vois que tu mets celle de head ci-dessous. Il faut bien découpler la descsription de MatchAll de la specification du langage et la preuve de correction de matchall. Et à moins que tu manques de place, je donnerais les défs des quatres.}
 
 \paragraph*{Specification.}
 \yzt{We have claimed that \ilc{MatchAll} \emph{returns all valid decompositions}. We capture this statement by providing specifications for each constructor of \pat, and proving they are exactly captures by \ilc{MatchAll}.}
+
+A specification for a opened pattern \ilc{PatF} of type \ilc{Pattern S -> Pattern (f S)} is a function \ilc{R_PatF} of type \ilc{ocfg -> Pattern S -> f S -> Prop}. We say that \ilc{MatchAll} is correct for that specification if we have:\\\ilc{forall (G: ocfg) (pat: Pattern S) (X:f S), X IN MatchAll (PatF pat) G IFF R_PatF G pat X}.
+
+Similarly, a specification for a closed pattern \ilc{pat: Pattern S} is \ilc{R_pat: ocfg -> S -> Prop}. \ilc{MatchAll} is correct for it if: \ilc{forall (G:ocfg) (X:S), X IN MatchAll pat G IFF R_pat G X}. 
+
+\leon{figure avec $Matchall \iff Prop$ pour chaque constructeur?}
 
 Proving the correctness for \ilc{Graph}, \ilc{When} and \ilc{Map} is immediate thanks to builtin lemmas on \ilc{filter} and \ilc{map}. \yz{Tu n'as pas énoncé cette correction, on ne peut donc comprendre en quoi c'est immédiat !}
 
@@ -366,59 +363,48 @@ The proof mechanism for \ilc{Block}, \ilc{Head} and \ilc{Branch} are similar. We
 The goal of that function is to find all the "heads", i.e. blocks without predecessors, in an OCFG.\\
 To do that, it folds a \ilc{heads_aux} function over the map. That function calls the \ilc{predecessors} function on each block, and appends the result to the return list if the block doesn't have predecessors.
 
-\begin{figure}[H]
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Definition heads_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
-      if is_empty (predecessors id G)
-      then (id, b, delete id G)::acc
-      else acc.
-
-    Definition heads (G: ocfg): list (bid*blk*ocfg) := map_fold (heads_aux G) [] G.
-  \end{lstlisting}
-  \caption{The \ilc{heads} function}
-  \label{fig:heads_fun}
-\end{figure}
-
 With these function, we can define the semantics corresponding to each function. We have to define them first for the auxiliary function for the semantics proof.
 
-\begin{figure}[H]
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Record heads_aux_sem (G0 G G': ocfg) id b := {
-      EQ: G' = delete id G0;
-      IN: G !! id = Some b;
-      PRED: predecessors id G0 = ∅
-    }.
+Record heads_aux_sem (G0 G G': ocfg) id b := {
+  EQ: G' = delete id G0;
+  IN: G !! id = Some b;
+  PRED: predecessors id G0 = ∅
+}.
 
-    Definition heads_sem (G G':ocfg) (id:bid) b := heads_aux_sem G G G' id b.
+Definition heads_sem (G G':ocfg) (id:bid) b := heads_aux_sem G G G' id b.
   \end{lstlisting}
   \caption{The semantic definition for \ilc{Head/heads}}
-  \label{fig:sem_block_def}
+  \label{fig:sem_head_def}
 \end{figure}
 
 Finally, we can prove the semantics for the auxiliary function, the \ilc{heads} function and \ilc{MatchAll Head}.
 
-\begin{figure}[H]
-  \label{fig:block_cor}
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    Definition heads_aux_P G0 (s:list (bid*blk*ocfg)) G :=
-      forall id b G', (id, b, G') ∈ s IFF heads_aux_sem G0 G G' id b.
+Definition heads_aux_P G0 (s:list (bid*blk*ocfg)) G :=
+  forall id b G', (id, b, G') ∈ s IFF heads_aux_sem G0 G G' id b.
 
-    Lemma heads_aux_correct:
-      forall G G0,
-      heads_aux_P G0 (map_fold (heads_aux G0) [] G) G.
+Lemma heads_aux_correct:
+  forall G G0,
+  heads_aux_P G0 (map_fold (heads_aux G0) [] G) G.
 
-    Lemma heads_correct:
-      forall G G' id b,
-      (id, b, G') ∈ (heads G) IFF heads_sem G G' id b.
+Lemma heads_correct:
+  forall G G' id b,
+  (id, b, G') ∈ (heads G) IFF heads_sem G G' id b.
 
-    Theorem Pattern_Head_correct {S}:
-      forall (G: ocfg) (P: Pattern S) id b X,
-      (id, b, X) ∈ (MatchAll (Head P) G) IFF
-      exists G', heads_sem G G' id b /\ X ∈ (MatchAll P G').
+Theorem Pattern_Head_correct {S}:
+  forall (G: ocfg) (P: Pattern S) id b X,
+  (id, b, X) ∈ (MatchAll (Head P) G) IFF
+  exists G', heads_sem G G' id b /\ X ∈ (MatchAll P G').
   \end{lstlisting}
+  \caption{The semantic proof of \ilc{MatchAll Head}}
+  \label{fig:head_cor}
 \end{figure}
 
 \yz{Décrire en anglais tout cela.}
+\leon{c'est à dire?}
 
 \section{Denotation}
 \label{sec:deno}
@@ -430,14 +416,14 @@ In this section we will informally define an optimization class, show a theorem 
 Since the goal of the patterns is to identify subgraphs, we want to focus on optimizations that only modify a section of the graph. (As opposed to ones that may modify everything, like constant propagation.)\\
 Ideally, we want to be able to replace any subgraph with an equivalent subgraph.
 
-\begin{figure}[h]
+\begin{figure}
   \xymatrix{
     &&&&&&&&\\
     G_2&\approx&G_2'&\implies&*+[F]{G_2}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]&\approx&*+[F]{G_2'}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]\\
     &&&&&&&&
   }
 \end{figure}
-\begin{figure}[h]
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Theorem (g1 g2 g2' : ocfg):
   forall from to, ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, to) ->
@@ -450,7 +436,7 @@ There needs to be some renaming. We chose to apply the renaming to \ilc{to} and 
 
 We define a function \ilc{ocfg_term_rename} which, given a function over ids \ilc{SIG} and a graph \ilc{g}, returns \ilc{g} with \ilc{SIG} applied to each id in its blocks' terminators.\\
 This new function gives us the following theorem:
-\begin{figure}[h]
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Theorem (g1 g2 g2' : ocfg) (σ : bid -> bid):
   forall from to, ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to) ->
@@ -460,7 +446,7 @@ Theorem (g1 g2 g2' : ocfg) (σ : bid -> bid):
 
 However, this still cannot be applied to Block Fusion. Indeed, if we try to start on the second block, the semantics are obliviously different.\\
 Similar issues can come from having an incorrect origin block. So we have to introduce two sets of ids \ilc{nTO} and \ilc{nFROM} to set condition on the input and origin ids.\\
-\begin{figure}[H]
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Theorem (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid):
   (forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
@@ -475,7 +461,7 @@ Finally, we need some conditions to make sure that:\begin{itemize}
 \end{itemize}
 
 These conditions give us the following final theorem:
-\begin{figure}[H]
+\begin{figure}
 \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Theorem denote_ocfg_equiv
   (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid) :
@@ -521,7 +507,7 @@ The second condition is needed because of the difference in evaluation between p
 
 With this, we can create a \ilc{fusion} function for Block Fusion (\ilc{term_rename} applies \ilc{SIG} to each id in the terminator).
 
-\begin{figure}[H]
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition fusion (σ: bid -> bid) (idA : bid) (A B: blk): blk := {|
   blk_phis       := A.(blk_phis);
@@ -535,7 +521,7 @@ Definition fusion (σ: bid -> bid) (idA : bid) (A B: blk): blk := {|
 
 We also define \ilc{SIGfusion}, the renaming function for Block Fusion:
 
-\begin{figure}[H]
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition σfusion idA idB := fun (id: bid) => if decide (id=idA) then idB else id.
   \end{lstlisting}
@@ -543,7 +529,7 @@ Definition σfusion idA idB := fun (id: bid) => if decide (id=idA) then idB else
 
 With these, we can prove first that \ilc{fusion} is correct, and then that the Block Fusion optimization is correct.
 
-\begin{figure}[H]
+\begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Theorem Denotation_BlockFusion_correct {S} G idA A idB B f to P (X:S):
   let σ := σfusion idA idB in
