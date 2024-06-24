@@ -387,76 +387,114 @@ Theorem Pattern_Head_correct {S}:
   \label{fig:head_cor}
 \end{figure}
 
-\section{Denotation}
+\section{Formal verification of an optimization pass: the case of block fusion}
 \label{sec:deno}
 
-In this section we will informally define an optimization class, show a theorem for proving the correctness of optimizations of that class, and apply this theorem to an implementation of Block Fusion.
+\yzt{We have introduced in Section~\ref{sec:lang} a pattern for detecting in a graph pairs of blocks that may be fused. In this section, we turn our attention to using this pattern for defining the block fusion optimization itself, and consider its proof of correctness. Rather than establishing an ad-hoc proof, we first establish a more general theorem for justifying a broad class of program transformations, and apply it to the case of block fusion.}
+\cut{In this section we will informally define an optimization class, show a theorem for proving the correctness of optimizations of that class, and apply this theorem to an implementation of Block Fusion.}
 
-\subsection{An optimization class}
+Recall from Section~\ref{sec:background} that we write $t \approx_R u$ to express $t$ and $u$ are weakly bisimilar itrees, whose leafs are related by the relation $R$, and $\approx$ when $R=eq$. On the Vellvm side, we write $\llbracket G \rrbracket$ for the denotation of a (possibly open) LLVM IR control flow graph into a function from pairs of block identifiers to itrees. Note that we consider here the first layer of the denotation: effects remains uninterpreted.
+In the remaining of this section, we overload the equivalence notations between graphs: $G_1 \approx_R G_2$ should be understood as $\llbracket G_1\rrbracket \approx_R \llbracket G_2\rrbracket$.
 
-Since the goal of the patterns is to identify subgraphs, we want to focus on optimizations that only modify a section of the graph. (As opposed to ones that may modify everything, like constant propagation.)\\
-Ideally, we want to be able to replace any subgraph with an equivalent subgraph.
+\subsection{On subgraph substitution under context}
 
-\begin{figure}
-  \xymatrix{
-    &&&&&&&&\\
-    G_2&\approx&G_2'&\implies&*+[F]{G_2}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]&\approx&*+[F]{G_2'}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]\\
-    &&&&&&&&
-  }
-\end{figure}
-\begin{figure}
+The purpose of a pattern is to identify a subgraph of the adequate shape, and optimize it: we hence focus here on optimizations that only modify a subcomponent of the graph---as opposed to graph-wide transformations that may modify everything, such as constant propagation. We hence need to consider two problems: capturing the notion of equivalence of graph we will consider between the patterned subgraph and its replacement, and justifying that this equivalence respects the context.
+
+\yz{À nouveau, une figure flottante n'est pas faite pour être considérée comme partie linéaire du texte. Il faut y faire référence dans le texte, et l'expliquer!!}
+
+\yz{Vraiment, ne force pas des retours à la ligne, ce n'est pas comme cela que LaTeX a été pensé.}
+
+% \begin{figure}
+%   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+% Theorem (g1 g2 g2' : ocfg):
+%   forall from to, ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, to) ->
+%   forall from to, ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ g1⟧bs (from, to).
+%   \end{lstlisting}
+% \end{figure}
+
+\yzt{Weak bisimilarity of interaction trees are proven to respect all relevant contexts in Vellvm. One could therefore simply consider the substitution of equivalent subgraphs $G_2$ and $G_2'$ in a larger context $G$, where graphs are equivalent if their denotations are bisimilar. Represented graphically:}
+\xymatrix{
+  &&&&&&&&\\
+  G_2&\approx&G_2'&\implies&*+[F]{G_2}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]&\approx&*+[F]{G_2'}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]\\
+  &&&&&&&&
+}
+
+\yzt{However, this convenient theorem is unusable for our purpose. Let us consider the case of block fusion: we replace two blocs $b_1$ and $b_2$ by a block $b$.
+If we chose as block identifier (bid) for $b$ the same as for $b_2$, then we must reflect on the context the need to enter the subgraph from a different entry point.
+In contrast, if we chose as bid for $b$ the same as for $b_1$, then we must reflect on the context that we exit the subgraph from a different entry point---as block provenance determines the semantics of phi-nodes.}
+
+\yzt{Hence, we must take some renaming into account, whether at the subgraph's input interface, or its output interface. Both are viable, but we favor the former. First because performing and reasoning about the renaming of terminators (to account for renamed inputs) is marginally simpler than of phi-nodes (to account for renamed outputs). Second because the resulting obligation for the two equivalent subgraphs becomes simpler to spell out: we need to start the denotations from renamed bids, but can therefore establish an exact weak bisimulation.}
+
+We start by defining the lifting of a renaming function \ilc{SIG} on bids to one on graphs \ilc{ocfg_term_rename SIG} by applying it to each of its blocks's terminators.
+We define a function \ilc{ocfg_term_rename} which, given a function over ids \ilc{SIG} and a graph \ilc{g}, returns \ilc{g} with \ilc{SIG} applied to each id in its blocks' terminators.
+We use this renaming function to establish a first contextual lemma: if two graphs $g_2$ and $g_2'$ are equivalent when executed from \ilc{SIG} related entry points, then the same holds true when extending the graphs with an arbitrary context $g_1$, provided it is renamed on the other side. That is:
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Theorem (g1 g2 g2' : ocfg):
-  forall from to, ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, to) ->
-  forall from to, ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ g1⟧bs (from, to).
-  \end{lstlisting}
-\end{figure}
-
-However, this ideal theorem is not enough. In the case of Block Fusion for example, since we replace two blocs by one, the change in ids means that either we have to enter by different ids, or we have to exit by different ids.\\
-There needs to be some renaming. We chose to apply the renaming to \ilc{to} and to \ilc{g1}'s terminators, since that keeps the semantics equivalent.
-
-We define a function \ilc{ocfg_term_rename} which, given a function over ids \ilc{SIG} and a graph \ilc{g}, returns \ilc{g} with \ilc{SIG} applied to each id in its blocks' terminators.\\
-This new function gives us the following theorem:
-\begin{figure}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Theorem (g1 g2 g2' : ocfg) (σ : bid -> bid):
+forall (g1 g2 g2' : ocfg) (σ : bid -> bid):
   forall from to, ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to) ->
   forall from to, ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, SIG to).
   \end{lstlisting}
-\end{figure}
 
-However, this still cannot be applied to Block Fusion. Indeed, if we try to start on the second block, the semantics are obliviously different.\\
-Similar issues can come from having an incorrect origin block. So we have to introduce two sets of ids \ilc{nTO} and \ilc{nFROM} to set condition on the input and origin ids.\\
-\begin{figure}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Theorem (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid):
-  (forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
-  forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, SIG to).
-  \end{lstlisting}
-\end{figure}
+This second statement remains insufficient to show the soundness of an optimization such as block fusion. Indeed, if we try start executing from the fused block $b_2$, the semantics are obviously different, one executing the code from $b_1$ and not the other.
 
-Finally, we need some conditions to make sure that:\begin{itemize}
-  \item the unions are well-formed,
-  \item \ilc{nFROM} and \ilc{nTO} are preserved during the (coinductive) proof,
-  \item \ilc{SIG} only changes ids from \ilc{g2} to \ilc{g2'}.
+More generally, we need to constrain the valid entry blocks of the graph. 
+To do so, we introduce two sets of bids \ilc{nTO} and \ilc{nFROM} to restrict the equations to valid input and origin bids.
+With this in hand, we can state the main contextual theorem we establish, displayed on Figure~\ref{fig:ocfg_equiv}.
+The first series of hypotheses are tedious well-formedness conditions expressing that the context ($g_1$) and the subgraphs ($g_2$ and $g_2'$) are disjoint,
+and capturing that the valid source ($nFROM$) belongs to the context, while the valid entry ($nTO$) belongs to the subgraphs.
+The second group of hypothesis simply characterizes the fact that our renaming is a finite renaming from the domain of $g_2$ to the domain of $g_2'$, despite its very lose typing as a total function.
+Finally, the third hypothesis is the semantically interesting one: the two subgraphs are equivalent at valid inputs.
+Given these, we conclude to the equivalence at valid inputs of the overall graphs.
+
+The formal proof is quite technical to mechanize, but relatively intuitive. We sketch here its high level structure, for the interested reader. We proceed by coinduction, and are in one of two cases:
+\begin{itemize}
+\item if we start the computation in $g_1$, we compute the same block on each side. We hence match them thanks to an up-to bind principle, synchronize both computations after the next jump, and conclude by coinduction;
+\item if we start the computation in $g_2$, we prove and use a meta-theorem for Vellvm establishing that the denotation of a graph is equivalent to the denotation of any of its subgraphs, followed by the denotation of the whole graph. We can hence see each side of the computation as starting by computing the denotation of respectively $g_2$ and $g_2'$: by up-to bind principle, we can match their prefixes using the hypothesis. One last hiccups need to be accounted for: in all generality, $g_2$ and $g_2'$ could be pure computations, and therefore contain no coinductive guard: we cannot conclude by coinduction immediately.
+Instead, with additional meta-theory from the itrees, we enrich the intermediate postcondition to know that we are exiting out of $g_2/g_2'$, and therefore are back to the case (1) where we can play the game a second time and conclude.
 \end{itemize}
 
-These conditions give us the following final theorem:
+% \begin{figure}
+%   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+% Theorem (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid):
+%   (forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
+%   forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, SIG to).
+%   \end{lstlisting}
+% \end{figure}
+
+% Finally, we need some conditions to make sure that:\begin{itemize}
+%   \item the unions are well-formed,
+%   \item \ilc{nFROM} and \ilc{nTO} are preserved during the (coinductive) proof,
+%   \item \ilc{SIG} only changes ids from \ilc{g2} to \ilc{g2'}.
+% \end{itemize}
+
+% These conditions give us the following final theorem:
+
 \begin{figure}
 \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Theorem denote_ocfg_equiv
-  (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid) :
-    inputs g2 ∩ inputs g2' ## nFROM -> nFROM ⊆ inputs g2 ∪ inputs g2' ->
-    inputs g2' ∖ inputs g2 ⊆ nTO -> nTO ⊆ inputs g2 ∪ inputs g2' -> nTO ## outputs g1 ->
-    g1 ## g2 -> ocfg_term_rename σ g1 ## g2' ->
+Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid) :
+    (* Well formedness properties, where ## is disjointness of sets or map domains *)
+    (inputs g2 ∩ inputs g2') ## nFROM -> 
+    nFROM ⊆ inputs g2 ∪ inputs g2' ->
+    inputs g2' ∖ inputs g2 ⊆ nTO -> 
+    nTO ⊆ inputs g2 ∪ inputs g2' -> 
+    nTO ## outputs g1 ->
+    g1 ## g2 -> 
+    ocfg_term_rename σ g1 ## g2' ->
+
+    (* σ is a finite map from the inputs of g2 to the inputs of gs2' *)
     (forall id, id ∈ inputs g2 -> (σ id) ∈ inputs g2') ->
     (forall id, id ∉ nFROM -> (σ id) = id) ->
-    (forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
+
+    (* The subtituted subgraph is equivalent to the original one *)
+    (forall from to, to ∉ nTO -> from ∉ nFROM -> 
+           ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
+
+    (* Then, the graphs are equivalent from any valid initial start *)
     forall from to,
     to ∉ nTO -> from ∉ nFROM ->
     ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, σ to).
   \end{lstlisting}
   \caption{The \ilc{denote_ocfg_equiv} theorem}
+  \label{fig:ocfg_equiv}
 \end{figure}
 
 \subsection{Motivations for Block Fusion}
