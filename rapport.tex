@@ -127,8 +127,9 @@ For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Comp
 
 \subsection{Interaction Trees}
 
-Interaction Trees (ITrees) are a co-inductive structure designed to represent the dynamic behaviors of a computation. The goal of ITrees is to model recursive and effectful programs, including divergent computations.\\
-Figure~\ref{fig:itree} show the Coq definition of ITrees. An instance of the type features an \emph{event} type \ilc{E: Type -> Type}, and a return type \ilc{R: Type}. The definition uses three constructors: \ilc{Ret} corresponds to halting and returning a value of type \ilc{R}; \ilc{Tau} corresponds to a \emph{silent step}, i.e. an internal computation, followed by computation \ilc{t}; and \ilc{Vis} which is a \emph{visible event}, it describes an external computation \ilc{e} which returns a value of type \ilc{A}, and a continuation \ilc{k} which depends on that return value.
+Interaction Trees (ITrees) are a co-inductive structure designed to represent the dynamic behaviors of a computation. The goal of ITrees is to model recursive and effectful programs, including divergent computations.
+
+Figure~\ref{fig:itree} show the Coq definition of ITrees. An instance of the type features an \emph{event} type \ilc{E: Type -> Type}, and a return type \ilc{R: Type}. The definition uses three constructors: \ilc{Ret} corresponds to halting and returning a value of type \ilc{R}; \ilc{Tau} corresponds to a \emph{silent step}, i.e. an internal computation, followed by computation \ilc{t}; and \ilc{Vis} corresponds to a \emph{visible event}, it describes an external computation \ilc{e} which returns a value of type \ilc{A}, and a continuation \ilc{k} which depends on that return value.
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
@@ -141,36 +142,38 @@ CoInductive itree (E : Type -> Type) (R : Type) : Type :=
   \label{fig:itree}
 \end{figure}
 
-To reason over ITrees, we have multiple notions of \emph{bisimulation}. The most relevant one is \emph{weak bisimulation}, noted \ilc{t1 ≈ t2}. We say that \ilc{t1 ≈ t2} if they return the same value, and have the same visible events. This relation is an equivalence ``up-to-Tau'' in the sense that we have \ilc{Tau t ≈ t} and \ilc{t ≈ Tau t}. This equivalence be refined up to a relationship $R : A \rightarrow B \rightarrow Prop$: we then have $\ilc{Ret}\; a \approx_R \ilc{Ret}\; b \iff R\; a\; b$. 
+To reason over ITrees, we have multiple notions of \emph{bisimulation}. The most relevant one is \emph{weak bisimulation}, noted \ilc{t1 ≈ t2}. We say that \ilc{t1 ≈ t2} if they return the same value, and have the same visible events. This relation is an equivalence ``up-to-Tau'' in the sense that we have \ilc{Tau t ≈ t} and \ilc{t ≈ Tau t}. This equivalence can be refined up to a relationship $R : A \rightarrow B \rightarrow Prop$: we then have $\ilc{Ret}\; a \approx_R \ilc{Ret}\; b \iff R\; a\; b$. 
 
 Effects can easily be added or removed from the semantics of an ITree. The \ilc{Vis} constructor represents \emph{uninterpreted events}. By defining an \emph{event handler}, semantics are assigned to these events. Interpreting an ITree then consists of folding that handler over the ITree. This allows the semantics of ITrees to be \emph{modular}.
 
 Furthermore, the semantics of ITrees are also \emph{compositional} with the use of \emph{combinators}. For example, \ilc{bind: itree E A -> (A -> itree E B) -> itree E B} allows composing ITrees (with the use of continuations).
 Other combinators include \ilc{iter: (A -> itree E (A+B)) -> (A -> itree E B)} to encode the iterations and hide the co-induction (by hiding each body step in a Tau), and \ilc{mrec} for mutual-recursive combinators. 
 
-Unlike similar projects, which rely on \emph{operational semantics} and simulation diagrams, ITrees rely on \emph{denotational semantics}. That is, it is based on equations that can be used to prove bisimulation. These equations allow the user to reason equationally, hiding the co-inductive reasoning and the definition of the weak bisimulation. The compositionality of the semantics also allow simpler reasoning than operational semantics, since program counter and similar notions are lifted away.
+Unlike similar projects, which rely on \emph{operational semantics} and simulation diagrams, ITrees rely on \emph{denotational semantics}. It is based on equations that can be used to prove bisimulation. These equations allow the user to reason without using co-inductive reasoning or the definition of the weak bisimulation. The compositionality of the semantics also allow simpler reasoning than operational semantics, since program counter and similar notions are lifted away.
 
 \subsection{Vellvm}
 
 \leon{TODO: figures (vir syntax and intrep stack), emphs}
 
-The goal of the Vellvm project is to formally define the semantic of the LLVM IR and construct verified
+The goal of the Vellvm project is to \emph{formally define} the semantic of the LLVM IR and construct verified
 components for that formalization.
 
-LLVM is a compiler infrastructure designed around a language-independent intermediate representation (IR). It is used to develop frontends for programming languages and backends for instruction set architectures.\\
-The LLVM IR is a RISC-like low level instruction set, but also features high-level informations. This duality allows it to represent any program while still permuting analysis and optimizations. It is based on control flow-graphs, with named labels and registers, and guarantees Single Static Assignment (SSA) form, which is key to many static analyses and optimizations. The LLVM IR is statically typed, and features integer-pointer casts.
-Optimizations ans analysis on the LLVM IR are done through successive analysis and transformation passes.
+LLVM is a compiler infrastructure designed around a language-independent \emph{intermediate representation} (IR). It is used to develop frontends for programming languages and backends for instruction set architectures.
 
-Vellvm introduces Verified LLVM IR (VIR), a realistic subset of the LLVM IR. Figure~\ref{vir} shows a subset of VIR's syntax. VIR's semantics are defined with ITrees: each element of VIR's syntax is represented by a corresponding ITree. Each effect (except control flow) is captured by a \ilc{Vis} event, which can be interpreted later. This semantic includes many non-trivial features of LLVM IR, including pointers, LLVM's phi-nodes and undefined behaviors.
+The LLVM IR is an instruction set similar to low-level assembly languages like RISC, but features high-level informations. This duality allows it to represent any program while still permitting analysis and optimizations. It is based on control flow-graphs, with named labels and registers, and guarantees Single Static Assignment (SSA) form, which is key to many static analyses and optimizations. The LLVM IR is statically typed, and features integer-pointer casts.
+
+Optimizations and analysis on the LLVM IR are done through successive \emph{analysis and transformation passes}.
+
+Vellvm introduces Verified LLVM IR (VIR), a \emph{realistic subset} of the LLVM IR. Figure~\ref{vir} shows a subset of VIR's syntax. VIR's semantics are defined with ITrees: each element of VIR's syntax is represented by a corresponding ITree. Each effect (except control flow) is captured by a \ilc{Vis} event, which can be interpreted later. This semantic includes many non-trivial features of LLVM IR, including pointers, LLVM's phi-nodes and undefined behaviors.
 
 Since the semantics of a block or set of blocks can be defined without relying on a ``complete'' CFG, it is possible to use ``open control-flow graphs'' (\ocfg), which is simply a set of blocks without a defined entry point.
 
-Finally, to interpret the semantics of the different effects of its syntax, Vellvm uses a stack of interpreters. It allows to gradually introduce external elements to the semantic (intrinsics, global and local environments, \ldots). Figure~\ref{interp} show that stack of interpretation. The final levels split between a \emph{propositional} model, which interprets the non-determinism of LLVM IR's undefined behaviors, and a \emph{executable} model, which implements one of these behaviors.
+To interpret the semantics of the different effects of its syntax, Vellvm uses a stack of interpreters. It gradually introduces external elements to the semantic (intrinsics, global and local environments, \ldots). Figure~\ref{interp} show that stack of interpretation. The final levels split between a \emph{propositional} model, which interprets the non-determinism of LLVM IR's undefined behaviors, and an \emph{executable} model, which implements one of these behaviors.
 
 \section{The pattern language}
 \label{sec:lang}
 
-\yz{De façon générale, commencer par des bullet points ou des séries de paragraphe est excellent, mais c'est important de lui donner corps en rédigeant dans un second temps un texte cohésif. Je tente une proposition rapide par exemple pour ce chapeau pour illustrer.}
+% \yz{De façon générale, commencer par des bullet points ou des séries de paragraphe est excellent, mais c'est important de lui donner corps en rédigeant dans un second temps un texte cohésif. Je tente une proposition rapide par exemple pour ce chapeau pour illustrer.}
 
 \yz{Remarque générale : il faut utiliser beaucoup beaucoup de macros quand on écrit du TeX. Par exemple OCFG va apparaître beaucoup, et on peut hésiter sur la façon de le typeset/écrire : macro }
 
@@ -282,7 +285,6 @@ Fixpoint MatchAll {S} (P: Pattern S) (g: ocfg) : list S :=
 \end{figure}
 
 \begin{figure}
-  \label{fig:fmapr}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition flat_map_r {A B C} (f : B -> list C) (l : list (A*B)) : list (A*C) :=
   match l with
@@ -297,14 +299,9 @@ end.
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition focus_aux id b acc : list ocfg := acc ++ (map (insert id b) acc).
 
-Definition focus_aux2 (G G1: ocfg) : ocfg*ocfg := (G1, G ∖ G1).
-
-Definition focus (G: ocfg) := map (focus_aux2 G) (map_fold focus_aux [∅] G).
+Definition focus (G: ocfg) := map (fun G' => (G', G ∖ G')) (map_fold focus_aux [∅] G).
   \end{lstlisting}
-  \caption{The \ilc{focus} function}
-  \label{fig:focus_fun}
-\end{figure}
-\begin{figure}
+  
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition blocks_aux (G: ocfg) : (bid*blk) -> (bid*blk*ocfg) :=
   fun '(id, b) => (id, b, delete id G).
@@ -312,10 +309,7 @@ Definition blocks_aux (G: ocfg) : (bid*blk) -> (bid*blk*ocfg) :=
 Definition blocks (G: ocfg): list (bid*blk*ocfg) :=
   map (blocks_aux G) (map_to_list G).
   \end{lstlisting}
-  \caption{The \ilc{blocks} function}
-  \label{fig:blocks_fun}
-\end{figure}
-\begin{figure}
+  
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition heads_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
   if is_empty (predecessors id G)
@@ -324,10 +318,7 @@ Definition heads_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
 
 Definition heads (G: ocfg): list (bid*blk*ocfg) := map_fold (heads_aux G) [] G.
   \end{lstlisting}
-  \caption{The \ilc{heads} function}
-  \label{fig:heads_fun}
-\end{figure}
-\begin{figure}
+  
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition branches_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
   match b.(blk_term) with
@@ -337,33 +328,29 @@ Definition branches_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
 
 Definition branches (G: ocfg): list (bid*blk*ocfg) := map_fold (branches_aux G) [] G.
   \end{lstlisting}
-  \caption{The \ilc{branches} function}
-  \label{fig:branches_fun}
+  \caption{\ilc{MatchAll}'s subfunctions}
+  \label{fig:match_sub_funs}
 \end{figure}
 
-For the extracting constructors (\ilc{Focus, Block, Head} and \ilc{Branch}), \ilc{MatchAll} also relies on decomposition functions, whose definitions are given in Figures~\ref{fig:focus_fun} to \ref{fig:branches_fun}.
+For the extracting constructors, \ilc{Focus, Block, Head} and \ilc{Branch}, \ilc{MatchAll} also relies on decomposition functions, whose definitions are given in Figure~\ref{fig:match_sub_funs}. These functions each rely on an auxiliary function which is folded over the graph to find each matching element.
 
-\yz{Where are the descriptions of focus / block / heads / branches ??? To insert here}
-\yz{Ah je vois que tu mets celle de head ci-dessous. Il faut bien découpler la descsription de MatchAll de la specification du langage et la preuve de correction de matchall. Et à moins que tu manques de place, je donnerais les défs des quatres.}
+\subsection{Specification}
 
-\paragraph*{Specification.}
 \yzt{We have claimed that \ilc{MatchAll} \emph{returns all valid decompositions}. We capture this statement by providing specifications for each constructor of \pat, and proving they are exactly captures by \ilc{MatchAll}.}
 
 A specification for a opened pattern \ilc{PatF} of type \ilc{Pattern S -> Pattern (f S)} is a function \ilc{R_PatF} of type \ilc{ocfg -> Pattern S -> f S -> Prop}. We say that \ilc{MatchAll} is correct for that specification if we have:\\\ilc{forall (G: ocfg) (pat: Pattern S) (X:f S), X IN MatchAll (PatF pat) G IFF R_PatF G pat X}.
 
 Similarly, a specification for a closed pattern \ilc{pat: Pattern S} is \ilc{R_pat: ocfg -> S -> Prop}. \ilc{MatchAll} is correct for it if: \ilc{forall (G:ocfg) (X:S), X IN MatchAll pat G IFF R_pat G X}. 
 
-\leon{figure avec $Matchall \iff Prop$ pour chaque constructeur?}
+The correction for \ilc{Graph} is given by the following theorem:\\\ilc{forall G G', G' ∈ (MatchAll Graph G) IFF G' = G.} Its proof is immediate by definition of \ilc{MatchAll Graph}.
 
-Proving the correctness for \ilc{Graph}, \ilc{When} and \ilc{Map} is immediate thanks to builtin lemmas on \ilc{filter} and \ilc{map}. \yz{Tu n'as pas énoncé cette correction, on ne peut donc comprendre en quoi c'est immédiat !}
+The correction for \ilc{fun P f -> When P f} is given by the following theorem:\\\ilc{forall (P: Pattern S) f X G, X ∈ (MatchAll (When P f) G) IFF f X = true \/\\ X ∈ (MatchAll P G).} We can also give a theorem for the correctness of \ilc{Map}. Proving their correctness is then immediate using builtin lemmas on \ilc{filter} and \ilc{map}.
 
-The proof mechanism for \ilc{Block}, \ilc{Head} and \ilc{Branch} are similar. We will now detail it for \ilc{Head}.\yz{Comme dit au dessus, pousser la partie définition de heads au dessus, et garder la partie spec et preuve ici.}
+The same proof mechanism is used for \ilc{Focus}, \ilc{Block}, \ilc{Head} and \ilc{Branch}. We will now detail it for \ilc{Head}.
 
-\ilc{MatchAll} relies on the \ilc{heads} function to match the \ilc{Head} constructor.\\
-The goal of that function is to find all the "heads", i.e. blocks without predecessors, in an OCFG.\\
-To do that, it folds a \ilc{heads_aux} function over the map. That function calls the \ilc{predecessors} function on each block, and appends the result to the return list if the block doesn't have predecessors.
+% \ilc{MatchAll} relies on the \ilc{heads} function to match the \ilc{Head} constructor. The goal of that function is to find all the "heads", i.e. blocks without predecessors, in an OCFG. To do that, it folds a \ilc{heads_aux} function over the map. That function calls the \ilc{predecessors} function on each block, and appends the result to the return list if the block doesn't have predecessors.
 
-With these function, we can define the semantics corresponding to each function. We have to define them first for the auxiliary function for the semantics proof.
+Figure~\ref{fig:sem_head_def} gives a semantic definition for \ilc{Head}. It is composed of two parts: \ilc{heads_aux_sem} which gives semantics for the auxiliary function, which is used to prove its correctness, and \ilc{heads_sem} which gives the actual semantics for \ilc{Head} and is used 
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
@@ -375,20 +362,17 @@ Record heads_aux_sem (G0 G G': ocfg) id b := {
 
 Definition heads_sem (G G':ocfg) (id:bid) b := heads_aux_sem G G G' id b.
   \end{lstlisting}
-  \caption{The semantic definition for \ilc{Head/heads}}
+  \caption{The semantic definition for \ilc{Head}}
   \label{fig:sem_head_def}
 \end{figure}
 
-Finally, we can prove the semantics for the auxiliary function, the \ilc{heads} function and \ilc{MatchAll Head}.
+Finally, as show in Figure~\ref{fig:head_cor} we can prove the semantics for the auxiliary function, the \ilc{heads} function and \ilc{MatchAll Head}.
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Definition heads_aux_P G0 (s:list (bid*blk*ocfg)) G :=
-  forall id b G', (id, b, G') ∈ s IFF heads_aux_sem G0 G G' id b.
-
 Lemma heads_aux_correct:
-  forall G G0,
-  heads_aux_P G0 (map_fold (heads_aux G0) [] G) G.
+  forall G G' G0 id b,
+  (id, b, G') ∈ (map_fold (heads_aux G0) [] G) IFF heads_aux_sem G0 G G' id b.
 
 Lemma heads_correct:
   forall G G' id b,
@@ -402,9 +386,6 @@ Theorem Pattern_Head_correct {S}:
   \caption{The semantic proof of \ilc{MatchAll Head}}
   \label{fig:head_cor}
 \end{figure}
-
-\yz{Décrire en anglais tout cela.}
-\leon{c'est à dire?}
 
 \section{Denotation}
 \label{sec:deno}
