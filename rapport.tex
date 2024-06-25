@@ -647,8 +647,11 @@ From there, proving \ilc{Denotation_BlockFusion_correct} is straight-froward as 
 \section*{Conclusion}
 \label{sec:ccl}
 
+During this internship, I designed \pat, a DSL of patterns over graphs to express structural properties. I implemented a matcher to compute the set of decompositions that match a given pattern and proved that it follows the specification of \pat.
+I then wrote an implementation of the Block Fusion optimization based on \pat, and proved it preserves the semantics of the graph. And, to establish this proof, I proved a generic substitution theorem and established a pattern whose specification captures a subgraph with a structure matching the requirements for the optimization.
+
+The Coq implementation for everything done during the internship is available at \url{https://github.com/lfrenot/vellvm/tree/gmap-minimal}.
+
+\printbibliography
+
 \end{document}
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: t
-%%% End:
