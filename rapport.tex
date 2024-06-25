@@ -447,6 +447,7 @@ Theorem Pattern_Head_correct {S}:
 \yzt{We have introduced in Section~\ref{sec:lang} a pattern for detecting in a graph pairs of blocks that may be fused. In this section, we turn our attention to using this pattern for defining the block fusion optimization itself, and consider its proof of correctness. Rather than establishing an ad-hoc proof, we first establish a more general theorem for justifying a broad class of program transformations, and apply it to the case of block fusion.}
 % \cut{In this section we will informally define an optimization class, show a theorem for proving the correctness of optimizations of that class, and apply this theorem to an implementation of Block Fusion.}
 
+\gr{Tu n'expliques jamais comment la dénotation d'un ocfg marche (fonction qui prend un bid d'entrée, etc). Il faut le faire ici. Attention aussi, ``bid'' n'est pas défini. p.e. dit ``blockid'' partout pour aider le lecteur.}
 Recall from Section~\ref{sec:background} that we write $t \approx_R u$ to express $t$ and $u$ are weakly bisimilar itrees, whose leafs are related by the relation $R$, and $\approx$ when $R=eq$. On the Vellvm side, we write $\llbracket G \rrbracket$ for the denotation of a (possibly open) LLVM IR control flow graph into a function from pairs of block identifiers to itrees. Note that we consider here the first layer of the denotation: effects remains uninterpreted.
 In the remaining of this section, we overload the equivalence notations between graphs: $G_1 \approx_R G_2$ should be understood as $\llbracket G_1\rrbracket \approx_R \llbracket G_2\rrbracket$.
 
@@ -476,17 +477,19 @@ The purpose of a pattern is to identify a subgraph of the adequate shape, and op
 \yzt{However, this convenient theorem is unusable for our purpose. Let us consider the case of block fusion: we replace two blocs $b_1$ and $b_2$ by a block $b$.
 If we chose as block identifier (bid) for $b$ the same as for $b_2$, then we must reflect on the context the need to enter the subgraph from a different entry point.
 In contrast, if we chose as bid for $b$ the same as for $b_1$, then we must reflect on the context that we exit the subgraph from a different entry point---as block provenance determines the semantics of $\phi$-nodes.}
-
+\gr{Je dois avouer qu'un petit example de mauvais renommage m'aurait aidé ici}
 \yzt{Hence, we must take some renaming into account, whether at the subgraph's input interface, or its output interface. Both are viable, but we favor the former. First because performing and reasoning about the renaming of terminators (to account for renamed inputs) is marginally simpler than of $\phi$-nodes (to account for renamed outputs). Second because the resulting obligation for the two equivalent subgraphs becomes simpler to spell out: we need to start the denotations from renamed bids, but can therefore establish an exact weak bisimulation.}
 
 We start by defining the lifting of a renaming function \ilc{SIG} on bids to one on graphs \ilc{ocfg_term_rename SIG} by applying it to each of its blocks's terminators.
-We define a function \ilc{ocfg_term_rename} which, given a function over ids \ilc{SIG} and a graph \ilc{g}, returns \ilc{g} with \ilc{SIG} applied to each id in its blocks' terminators.
+We define a function \ilc{ocfg_term_rename} which, given a function over ids~ \ilc{SIG} and a graph \ilc{g}, returns \ilc{g} with~ \ilc{SIG} applied to each id in its blocks' terminators.
 We use this renaming function to establish a first contextual lemma: if two graphs $g_2$ and $g_2'$ are equivalent when executed from \ilc{SIG} related entry points, then the same holds true when extending the graphs with an arbitrary context $g_1$, provided it is renamed on the other side. That is:
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 forall (g1 g2 g2' : ocfg) (σ : bid -> bid):
   forall from to, ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to) ->
   forall from to, ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, SIG to).
   \end{lstlisting}
+
+\gr{c'est quoi la notation avec bs ? Explique.}
 
 This second statement remains insufficient to show the soundness of an optimization such as block fusion. Indeed, if we try start executing from the fused block $b_2$, the semantics are obviously different, one executing the code from $b_1$ and not the other.
 
@@ -556,12 +559,10 @@ In this section, we will define the Block Fusion optimization, describe a corres
 The Block Fusion optimization consists of picking two blocks $A$ and $B$,
 such that $A$ is the only predecessor of $B$ and $B$ is the only successor of $A$,
 and replacing them with a single block containing the code of $A$ and $B$.
-
+%
 Block Fusion is a relevant optimization for us to choose for multiple reasons. Firstly, it is a commonly used optimization, notably to clean blocks created while building SSA form. Secondly, it is an optimization that modifies the graph. And finally, it is simple on paper to prove that the optimization is correct.
 
-In Section~\ref{sec:lang}, we gave \ilc{pfusion}, a closed pattern for Block Fusion. In our work, we used an opened variation, which allows further composing. Figure~\ref{fig:bfusion} gives the definition of that pattern, \ilc{BlockFusion}, as well as the definition of \ilc{BlockFusion_f}.
-
-\begin{figure}
+\begin{figure}[h]
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition BlockFusion_f {S}: (bid * blk * (bid * blk * S) -> bool) :=
   fun '(_, A, (idB, B, _)) => is_seq A idB && no_phi B.
@@ -572,6 +573,8 @@ Definition BlockFusion {S} (P: Pattern S) := When (Block (Head P)) BlockFusion_f
   \label{fig:bfusion}
 \end{figure}
 
+In Section~\ref{sec:lang}, we gave \ilc{pfusion}, a closed pattern for Block Fusion. In our work, we used an opened variation, which allows further composing. Figure~\ref{fig:bfusion} gives the definition of that pattern, \ilc{BlockFusion}, as well as the definition of \ilc{BlockFusion_f}.
+%
 \ilc{BlockFusion_f} asserts that B is the only successor of A. More specifically, it asserts that the terminator \ilc{A} is an absolute jump to \ilc{B}. It also asserts that \ilc{B} has an empty $\phi$-node.
 
 If the first condition only looked at successors, it would accept conditional jumps where both destinations are \ilc{B}. However, it would also accept if the condition of the jump could evaluate to an error. Because of that, we need to only accept absolute jumps.
