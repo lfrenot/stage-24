@@ -252,7 +252,7 @@ To this end, we introduce \pat, a general, very expressive DSL for pattern match
 
 Figure~\ref{fig:pat} introduces \pat{}'s syntax, defined as an inductive datatype \ilc{Pattern}.
 Because the purpose of a pattern is to decompose a graph into a certain structure, the \ilc{Pattern} datatype reflects this intention by taking as argument a type, which represents the return type of the pattern.\footnote{Such families of types are common in dependently typed languages, and are referred to as Generalized Algebraic Data Types in languages such as OCaml or Haskell.}
-This typing information is leveraged in the definition of the matcher, introduced in Section~\ref{sec:matcher}: a pattern of type \ilc{Pattern S} will be matched against elements of type \ilc{S}.
+This typing information is leveraged in the definition of the matcher, introduced in Section~\ref{sec:matcher}: matching a pattern of type \ilc{Pattern S} will always return elements of type \ilc{S}.
 
 The \ilc{Pattern} type is build of seven constructors. The only base case is the \ilc{Graph} constructor which trivially match any graph and does not perform any decomposition. On more traditional paper presentation, it corresponds to a single hole $\square$.
 
@@ -265,6 +265,8 @@ The \ilc{Block} constructor extracts any block from the graph and matches the pa
 The \ilc{Head} constructor extracts a block without predecessors from the graph and matches the pattern given as argument against the rest of the graph.
 The \ilc{Branch} constructor extracts a block whose terminator is a branch from the graph and matches the pattern given as argument against the rest of the graph.
 
+
+\gr{Je déplacerai ces trois paragraphes pour plus tard, sous un label ``Discussoun around the constructors''. Ici, il nous faut un example}
 This set of patterns is not minimal. Indeed, \ilc{fun p => Block p} could be written as\\\ilc{fun p => When (Focus p) (fun '(l, _) => size l = 1)}, and \ilc{fun p => Branch p} could be written as \ilc{fun p => When (Block p) (fun '(id, b, _) => term_is_branch b)}. Finding a minimal set was not a goal of the DSL as the main concern was ease of use, both for the user, for designing a matcher, and for establishing the meta-theory. 
 
 \ilc{Map} and the functoriality it brings feel natural to add and are easy to implement and prove. But we have no immediate use for it at this time. An argument against \ilc{Map} could be made, as every other constructor allows working backwards to rebuild the graph by recombining the extracted part (as long as it matches with something).
@@ -277,7 +279,8 @@ While a user will want to work using closed instances of pattern, that is object
 We illustrate the use of \pat{} to implement\footnote{Or rather, to \emph{specify} such an optimization. We discuss briefly executability in conclusion.} a bloc fusion optimization.
 Block Fusion typically consists of finding two blocks (A and B) such that A is the only predecessors of B, B is the only successor of A, and B is not the graph's entry point. Since an execution of A is always followed by B, and an execution of B is always preceded by A, we can replace them by a single block that follows the execution of both A and B.
 
-The applicable subgraphs are specified with the pattern\\\ilc{pfusion := When (Block (Head Graph)) BlockFusion\_f}.
+The applicable subgraphs are specified with the pattern:
+\[\ilc{pfusion := When (Block (Head Graph)) BlockFusion\_f}\]
 The pattern starts by the \ilc{Block} to match any block \ilc{A} Then, \ilc{Head} matches a block \ilc{B} that has no predecessors (except possibly \ilc{A} as it is not in scope of the pattern anymore), and finally \ilc{When _ BlockFusion\_f} asserts that \ilc{B} is the only successor of \ilc{A}.
 
 \begin{figure}
@@ -303,7 +306,12 @@ show the \ilc{When} constructor.
 We now turn to the question of defining the semantics of our patterns, via a \emph{matcher function}. 
 A matcher function takes a pattern \ilc{p} and an \ocfg{} \ilc{G} as arguments, and returns a set of decompositions of \ilc{G} that match \ilc{p}.
 We have mainly focused on \emph{specifying} patterns, by implementing a matcher that returns \emph{all} valid decompositions. 
-Although rather meant as a specification than as a realistic implementation, the \ilc{MatchAll} function, depicted in Figure~\ref{fig:matchall}, is nonetheless executable. This not only allows for testing, but also drastically reduces the distance left to bridge to have an efficient implementation that is provably sound. To do so, the matcher lives in the list monad: it computes recursively the decomposition according to the sub-pattern, and flat maps (Definition provided on Figure~\ref{fig:flatmap}) a function for each constructor extending the decomposition according to the head constructor.
+Although rather meant as a specification than as a realistic implementation, the \ilc{MatchAll} function, depicted in Figure~\ref{fig:matchall}, is nonetheless executable. This not only allows testing, but also drastically reduces the distance left to bridge to have an efficient implementation that is provably sound.
+
+\gr{Cette description est le moment crucial, il faut que ca soit beaucoup plus
+  clair ce qu'il se passe}
+\gr{In practice, our matcher turns a list:}
+it computes recursively the decomposition according to the sub-pattern, and flat maps (Definition provided on Figure~\ref{fig:flatmap})\gr{Dit ce que ca fait} a function for each constructor extending the decomposition according to the head constructor.
 
 \begin{figure}
   \label{fig:match}
@@ -372,6 +380,7 @@ Definition branches (G: ocfg): list (bid*blk*ocfg) := map_fold (branches_aux G) 
 \end{figure}
 
 For the extracting constructors, \ilc{Focus, Block, Head} and \ilc{Branch}, \ilc{MatchAll} also relies on decomposition functions, whose definitions are given in Figure~\ref{fig:match_sub_funs}. These functions each rely on an auxiliary function which is folded over the graph to find each matching element.
+\gr{La, tu n'expliques rien. Prends en une en particulier, et explique la!!}
 
 \subsection{Specification}
 
