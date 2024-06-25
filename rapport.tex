@@ -53,6 +53,7 @@
 \addbibresource{references.bib}
 
 \newcommand{\leon}[1]{\textcolor{blue}{#1}}
+\newcommand{\gr}[1]{\textcolor{Orange}{#1}}
 \newcommand{\yz}[1]{\textcolor{ForestGreen}{#1}}
 \newcommand{\yzt}[1]{\textcolor{ForestGreen!50}{#1}}
 \newcommand{\cut}[1]{\textcolor{Gray!40}{#1}}
@@ -106,7 +107,7 @@
 \label{sec:intro}
 
 \indent
-For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Computer Science laboratory in ENS Lyon. This internship was supervised by Yannick Zakowski and Gabriel Radanne in the Compilation and Analysis, Software and Hardware Laboratory of the LIP. The goal of this internship was to design and implement a pattern language over control flow graphs to provide a framework for formal proofs on optimizations.
+For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Computer Science laboratory in ENS Lyon. This internship was supervised by Yannick Zakowski and Gabriel Radanne in the Compilation and Analysis, Software and Hardware Team of the LIP. The goal of this internship was to design and implement a pattern language over control flow graphs to provide a framework for formal proofs on optimizations.
 
 % Compilation
 
@@ -149,11 +150,16 @@ In the remaining of this report, Section~\ref{sec:background} introduces the nec
 \section{Background}
 \label{sec:background}
 
+\gr{Pourquoi ne pas mettre Vellvm d'abord ? C'est plus ``grand publique'' et c'est plus facile d'expliquer l'interet des itrees}
+
 \subsection{Interaction Trees}
+
+\gr{At the heart of Vellvm's formalisation of LLVM is the notion of Interaction Trees.}
+
 
 Interaction Trees (ITrees) are a coinductive structure designed to represent the dynamic behaviors of a computation. The goal of ITrees is to model recursive and effectful programs, including divergent computations.
 
-Figure~\ref{fig:itree} show the Coq definition of ITrees. An instance of the type features an \emph{event} type \ilc{E: Type -> Type}, and a return type \ilc{R: Type}. The definition uses three constructors: \ilc{Ret} corresponds to halting and returning a value of type \ilc{R}; \ilc{Tau} corresponds to a \emph{silent step}, i.e. an internal computation, followed by computation \ilc{t}; and \ilc{Vis} corresponds to a \emph{visible event}, it describes an external computation \ilc{e} which returns a value of type \ilc{A}, and a continuation \ilc{k} which depends on that return value.
+Figure~\ref{fig:itree} show the Coq definition of ITrees. \gr{It has two parameters:} an \emph{event} type \ilc{E: Type -> Type}, and a return type \ilc{R: Type}. The definition uses three constructors: \ilc{Ret} corresponds to halting and returning a value of type \ilc{R}; \ilc{Tau} corresponds to a \emph{silent step}, i.e. an internal computation, followed by computation \ilc{t}; and \ilc{Vis} corresponds to a \emph{visible event}, it describes an external computation \ilc{e} which returns a value of type \ilc{A}, and a continuation \ilc{k} which depends on that return value.
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
@@ -166,12 +172,19 @@ CoInductive itree (E : Type -> Type) (R : Type) : Type :=
   \label{fig:itree}
 \end{figure}
 
-To reason over ITrees, we have multiple notions of \emph{bisimilarity}. The most relevant one is \emph{weak bisimilarity}, noted \ilc{t1 ≈ t2}. We say that \ilc{t1 ≈ t2} if they return the same value, and have the same visible events. This relation is an equivalence ``up-to-Tau'' in the sense that we have \ilc{Tau t ≈ t} and \ilc{t ≈ Tau t}. This equivalence can be refined up to a relationship $R : A \rightarrow B \rightarrow Prop$: we then have $\ilc{Ret}\; a \approx_R \ilc{Ret}\; b \iff R\; a\; b$. 
+\gr{A ce stade, il nous faudrait un example de programme et de son arbre. Potentielement le piquer d'un article (en citant)}
+
+\gr{Rajoute une explication rapide de ce qu'implique ``coinductif'' ici: les arbres peuvent être infini, etc. Probablement enlever la notion de ``coinductif'' de la première phase de la section}
 
 Effects can easily be added or removed from the semantics of an ITree. The \ilc{Vis} constructor represents \emph{uninterpreted events}. By defining an \emph{event handler}, semantics are assigned to these events. Interpreting an ITree then consists of folding that handler over the ITree. This allows the semantics of ITrees to be \emph{modular}.
 
 Furthermore, the semantics of ITrees are also \emph{compositional} with the use of \emph{combinators}. For example,\ilc{bind: itree E A -> (A -> itree E B) -> itree E B} allows composing ITrees (with the use of continuations).
 Other combinators include \ilc{iter: (A -> itree E (A+B)) -> (A -> itree E B)} to encode the iterations and hide the co-induction (by hiding each body step in a Tau), and \ilc{mrec} for mutual-recursive combinators. 
+\gr{Je pense que donner les types n'apporte rien du tout ici. Dit plutot simplement qu'on peut donner des fonctions qui permettent de construire la séquence de deux itrees, ou l'itéré d'un itree (et explique ce que ca veut dire, du point de vue d'un programme)}
+
+\gr{J'ai déplacé ca plus tard}
+To reason over ITrees, we have multiple notions of \emph{bisimilarity}. The most relevant one is \emph{weak bisimilarity}, noted \ilc{t1 ≈ t2}. We say that \ilc{t1 ≈ t2} if they return the same value, and have the same visible events. This relation is an equivalence ``up-to-Tau'' in the sense that we have \ilc{Tau t ≈ t} and \ilc{t ≈ Tau t}. This equivalence can be refined up to a relationship $R : A \rightarrow B \rightarrow Prop$: we then have $\ilc{Ret}\; a \approx_R \ilc{Ret}\; b \iff R\; a\; b$.
+\gr{Tout sert la dedans ? Je pense qu'il ne faut présenter que ce dont tu vas avoir besoin. Aussi: cite}
 
 Unlike similar projects, which rely on \emph{operational semantics} and simulation diagrams, ITrees rely on \emph{denotational semantics}. It is based on equations that can be used to prove bisimulation. These equations allow the user to reason without using coinductive reasoning or the definition of the weak bisimulation. The compositionality of the semantics also allow simpler reasoning than operational semantics, since program counter and similar notions are lifted away.
 
@@ -179,12 +192,13 @@ Unlike similar projects, which rely on \emph{operational semantics} and simulati
 
 \leon{TODO: figures (vir syntax and intrep stack)}
 
-The goal of the Vellvm project is to \emph{formally define} the semantic of the LLVM IR and construct verified components for that formalization.
+The goal of the Vellvm project is to \emph{formally define} the semantic of the LLVM IR and build verified
+components based on that formalization.
+%
+LLVM~\cite{} is a compiler infrastructure designed around a language-independent \emph{intermediate representation} (IR). It is used to develop frontends for programming languages and backends for instruction set architectures.
 
-LLVM is a compiler infrastructure designed around a language-independent \emph{intermediate representation} (IR). It is used to develop frontends for programming languages and backends for instruction set architectures.
-
-The LLVM IR is an instruction set similar to low-level assembly languages like RISC, but features high-level informations. This duality allows it to represent any program while still permitting analysis and optimizations. It is based on control flow-graphs, with named labels and registers, and guarantees Single Static Assignment (SSA) form, which is key to many static analyses and optimizations. The LLVM IR is statically typed, and features integer-pointer casts.
-
+The LLVM IR is an instruction set similar to low-level assembly languages like RISC, but features high-level informations. This duality allows it to represent any program while still permitting analysis and optimizations. It is based on control flow-graphs, with named labels and registers, and guarantees Single Static Assignment (SSA) form~\cite{}, which is key to many static analyses and optimizations. The LLVM IR is statically typed, and features integer-pointer casts.
+%
 Optimizations and analysis on the LLVM IR are done through successive \emph{analysis and transformation passes}.
 
 Vellvm introduces Verified LLVM IR (VIR), a \emph{realistic subset} of the LLVM IR. Figure~\ref{vir} shows a subset of VIR's syntax. VIR's semantics are defined with ITrees: each element of VIR's syntax is represented by a corresponding ITree. Each effect (except control flow) is captured by a \ilc{Vis} event, which can be interpreted later. This semantic includes many non-trivial features of LLVM IR, including pointers, LLVM's $\phi$-nodes and undefined behaviors.
@@ -192,6 +206,8 @@ Vellvm introduces Verified LLVM IR (VIR), a \emph{realistic subset} of the LLVM 
 Since the semantics of a block or set of blocks can be defined without relying on a ``complete'' CFG, it is possible to use ``open control-flow graphs'' (\ocfg), which is simply a set of blocks without a defined entry point.
 
 To interpret the semantics of the different effects of its syntax, Vellvm uses a stack of interpreters. It gradually introduces external elements to the semantic (intrinsics, global and local environments, \ldots). Figure~\ref{interp} show that stack of interpretation. The final levels split between a \emph{propositional} model, which interprets the non-determinism of LLVM IR's undefined behaviors, and an \emph{executable} model, which implements one of these behaviors.
+
+\gr{In the context of this internship, I will interact with layer X.}
 
 \section{The pattern language}
 \label{sec:lang}
@@ -632,3 +648,7 @@ From there, proving \ilc{Denotation_BlockFusion_correct} is straight-froward as 
 \label{sec:ccl}
 
 \end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
