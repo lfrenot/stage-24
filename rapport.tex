@@ -177,10 +177,9 @@ Unlike similar projects, which rely on \emph{operational semantics} and simulati
 
 \subsection{Vellvm}
 
-\leon{TODO: figures (vir syntax and intrep stack), emphs}
+\leon{TODO: figures (vir syntax and intrep stack)}
 
-The goal of the Vellvm project is to \emph{formally define} the semantic of the LLVM IR and construct verified
-components for that formalization.
+The goal of the Vellvm project is to \emph{formally define} the semantic of the LLVM IR and construct verified components for that formalization.
 
 LLVM is a compiler infrastructure designed around a language-independent \emph{intermediate representation} (IR). It is used to develop frontends for programming languages and backends for instruction set architectures.
 
@@ -188,7 +187,7 @@ The LLVM IR is an instruction set similar to low-level assembly languages like R
 
 Optimizations and analysis on the LLVM IR are done through successive \emph{analysis and transformation passes}.
 
-Vellvm introduces Verified LLVM IR (VIR), a \emph{realistic subset} of the LLVM IR. Figure~\ref{vir} shows a subset of VIR's syntax. VIR's semantics are defined with ITrees: each element of VIR's syntax is represented by a corresponding ITree. Each effect (except control flow) is captured by a \ilc{Vis} event, which can be interpreted later. This semantic includes many non-trivial features of LLVM IR, including pointers, LLVM's phi-nodes and undefined behaviors.
+Vellvm introduces Verified LLVM IR (VIR), a \emph{realistic subset} of the LLVM IR. Figure~\ref{vir} shows a subset of VIR's syntax. VIR's semantics are defined with ITrees: each element of VIR's syntax is represented by a corresponding ITree. Each effect (except control flow) is captured by a \ilc{Vis} event, which can be interpreted later. This semantic includes many non-trivial features of LLVM IR, including pointers, LLVM's $\phi$-nodes and undefined behaviors.
 
 Since the semantics of a block or set of blocks can be defined without relying on a ``complete'' CFG, it is possible to use ``open control-flow graphs'' (\ocfg), which is simply a set of blocks without a defined entry point.
 
@@ -199,21 +198,21 @@ To interpret the semantics of the different effects of its syntax, Vellvm uses a
 
 % \yz{De façon générale, commencer par des bullet points ou des séries de paragraphe est excellent, mais c'est important de lui donner corps en rédigeant dans un second temps un texte cohésif. Je tente une proposition rapide par exemple pour ce chapeau pour illustrer.}
 
-\yz{Remarque générale : il faut utiliser beaucoup beaucoup de macros quand on écrit du TeX. Par exemple OCFG va apparaître beaucoup, et on peut hésiter sur la façon de le typeset/écrire : macro }
+% \yz{Remarque générale : il faut utiliser beaucoup beaucoup de macros quand on écrit du TeX. Par exemple OCFG va apparaître beaucoup, et on peut hésiter sur la façon de le typeset/écrire : macro }
 
-\yz{Il peut être pratique d'avoir un nom pour ton langage pour pouvoir y référer.}
+% \yz{Il peut être pratique d'avoir un nom pour ton langage pour pouvoir y référer.}
 
 \yzt{We now turn our attention to the central piece of our contribution: the design of \pat{}, a DSL of patterns for writing and proving correct program transformations. This DSL is composed of two core components. First, an indexed datatype provides a syntax for the user to specify how they wish to decompose an input \ocfg. Second, a \emph{matcher} provides a semantics to the language, specifying the valid decompositions associated to each pattern. Finally, we illustrate on an example the definition and semantic characterization of a pattern extracting the heads of a graph, written in our DSL.}
 
 In this section we will focus on our main contribution: the design of \pat{}, a DSL of patterns for writing and proving correct program transformations. This DSL is composed of two core components. The first is a datatype, \ilc{Pattern}, which provides a syntax for the user to specify how they wish to decompose an input \ocfg. The second is a \emph{matcher} function, which provides semantics to apply the language to an \ocfg{}, specifying the valid decompositions associated to each pattern. Finally, we illustrate on an example the definition and semantic characterization of a pattern extracting the heads of a graph, written in our DSL\@.
 
-\cut{
-In this section we will:\begin{itemize}
-  \item Define a Domain Specific Language that can capture optimizable subgraphs in an \ocfg\@.
-  \item Introduce a matcher on this language and the corresponding semantics of each constructor.
-  \item Present the Coq implementation of the language, matcher and semantics.
-\end{itemize}
-}
+% \cut{
+% In this section we will:\begin{itemize}
+%   \item Define a Domain Specific Language that can capture optimizable subgraphs in an \ocfg\@.
+%   \item Introduce a matcher on this language and the corresponding semantics of each constructor.
+%   \item Present the Coq implementation of the language, matcher and semantics.
+% \end{itemize}
+% }
 
 \subsection{\pat: a DSL for pattern matching on graphs}
 
@@ -275,10 +274,10 @@ The pattern starts by the \ilc{Block} to match any block \ilc{A} Then, \ilc{Head
     \save "2,3"."4,5"*[F--]\frm{} \restore
   }
   \caption{The \ilc{pfusion} pattern}
-  \label{fig:fusion}
+  \label{fig:gfusion}
 \end{figure}
 
-Figure~\ref{fig:fusion} illustrates graphically the shape of the graph decompositions that match \ilc{pfusion}. The full lines (\ilc{A, B} and the arrow between them) represent the parts fixed by \ilc{pfusion}. The dashed lines refer to parts that are allowed, but not necessarily them: other blocks in the graphs with arrows coming towards \ilc{A} or from \ilc{B} (but not in the middle of them). The dotted lines 
+Figure~\ref{fig:gfusion} illustrates graphically the shape of the graph decompositions that match \ilc{pfusion}. The full lines (\ilc{A, B} and the arrow between them) represent the parts fixed by \ilc{pfusion}. The dashed lines refer to parts that are allowed, but not necessarily them: other blocks in the graphs with arrows coming towards \ilc{A} or from \ilc{B} (but not in the middle of them). The dotted lines 
 show the \ilc{When} constructor.
 % \yz{Refer to and explain the figure! "Figure~2 illustrate graphically the shape of the graph decompositions that match \ilc{pfusion} ..." Use the names suggested above, and explain the meaning of the different arrows.}
 
@@ -415,7 +414,7 @@ Theorem Pattern_Head_correct {S}:
 \label{sec:deno}
 
 \yzt{We have introduced in Section~\ref{sec:lang} a pattern for detecting in a graph pairs of blocks that may be fused. In this section, we turn our attention to using this pattern for defining the block fusion optimization itself, and consider its proof of correctness. Rather than establishing an ad-hoc proof, we first establish a more general theorem for justifying a broad class of program transformations, and apply it to the case of block fusion.}
-\cut{In this section we will informally define an optimization class, show a theorem for proving the correctness of optimizations of that class, and apply this theorem to an implementation of Block Fusion.}
+% \cut{In this section we will informally define an optimization class, show a theorem for proving the correctness of optimizations of that class, and apply this theorem to an implementation of Block Fusion.}
 
 Recall from Section~\ref{sec:background} that we write $t \approx_R u$ to express $t$ and $u$ are weakly bisimilar itrees, whose leafs are related by the relation $R$, and $\approx$ when $R=eq$. On the Vellvm side, we write $\llbracket G \rrbracket$ for the denotation of a (possibly open) LLVM IR control flow graph into a function from pairs of block identifiers to itrees. Note that we consider here the first layer of the denotation: effects remains uninterpreted.
 In the remaining of this section, we overload the equivalence notations between graphs: $G_1 \approx_R G_2$ should be understood as $\llbracket G_1\rrbracket \approx_R \llbracket G_2\rrbracket$.
@@ -424,9 +423,9 @@ In the remaining of this section, we overload the equivalence notations between 
 
 The purpose of a pattern is to identify a subgraph of the adequate shape, and optimize it: we hence focus here on optimizations that only modify a subcomponent of the graph---as opposed to graph-wide transformations that may modify everything, such as constant propagation. We hence need to consider two problems: capturing the notion of equivalence of graph we will consider between the patterned subgraph and its replacement, and justifying that this equivalence respects the context.
 
-\yz{À nouveau, une figure flottante n'est pas faite pour être considérée comme partie linéaire du texte. Il faut y faire référence dans le texte, et l'expliquer!!}
+% \yz{À nouveau, une figure flottante n'est pas faite pour être considérée comme partie linéaire du texte. Il faut y faire référence dans le texte, et l'expliquer!!}
 
-\yz{Vraiment, ne force pas des retours à la ligne, ce n'est pas comme cela que LaTeX a été pensé.}
+% \yz{Vraiment, ne force pas des retours à la ligne, ce n'est pas comme cela que LaTeX a été pensé.}
 
 % \begin{figure}
 %   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
@@ -445,9 +444,9 @@ The purpose of a pattern is to identify a subgraph of the adequate shape, and op
 
 \yzt{However, this convenient theorem is unusable for our purpose. Let us consider the case of block fusion: we replace two blocs $b_1$ and $b_2$ by a block $b$.
 If we chose as block identifier (bid) for $b$ the same as for $b_2$, then we must reflect on the context the need to enter the subgraph from a different entry point.
-In contrast, if we chose as bid for $b$ the same as for $b_1$, then we must reflect on the context that we exit the subgraph from a different entry point---as block provenance determines the semantics of phi-nodes.}
+In contrast, if we chose as bid for $b$ the same as for $b_1$, then we must reflect on the context that we exit the subgraph from a different entry point---as block provenance determines the semantics of $\phi$-nodes.}
 
-\yzt{Hence, we must take some renaming into account, whether at the subgraph's input interface, or its output interface. Both are viable, but we favor the former. First because performing and reasoning about the renaming of terminators (to account for renamed inputs) is marginally simpler than of phi-nodes (to account for renamed outputs). Second because the resulting obligation for the two equivalent subgraphs becomes simpler to spell out: we need to start the denotations from renamed bids, but can therefore establish an exact weak bisimulation.}
+\yzt{Hence, we must take some renaming into account, whether at the subgraph's input interface, or its output interface. Both are viable, but we favor the former. First because performing and reasoning about the renaming of terminators (to account for renamed inputs) is marginally simpler than of $\phi$-nodes (to account for renamed outputs). Second because the resulting obligation for the two equivalent subgraphs becomes simpler to spell out: we need to start the denotations from renamed bids, but can therefore establish an exact weak bisimulation.}
 
 We start by defining the lifting of a renaming function \ilc{SIG} on bids to one on graphs \ilc{ocfg_term_rename SIG} by applying it to each of its blocks's terminators.
 We define a function \ilc{ocfg_term_rename} which, given a function over ids \ilc{SIG} and a graph \ilc{g}, returns \ilc{g} with \ilc{SIG} applied to each id in its blocks' terminators.
@@ -461,11 +460,11 @@ forall (g1 g2 g2' : ocfg) (σ : bid -> bid):
 This second statement remains insufficient to show the soundness of an optimization such as block fusion. Indeed, if we try start executing from the fused block $b_2$, the semantics are obviously different, one executing the code from $b_1$ and not the other.
 
 More generally, we need to constrain the valid entry blocks of the graph. 
-To do so, we introduce two sets of bids \ilc{nTO} and \ilc{nFROM} to restrict the equations to valid input and origin bids by listing the invalid inputs and origin bids.
+To do so, we introduce a set of bids \ilc{nTO} to restrict the equations to valid input bids by listing the invalid inputs.
 With this in hand, we can state the main contextual theorem we establish, displayed on Figure~\ref{fig:ocfg_equiv}.
 The first series of hypotheses are well-formedness conditions expressing that the context ($g_1$) and the subgraphs ($g_2$ and $g_2'$) are disjoint,
-capturing that the invalid sources ($nFROM$) and entries ($nTO$) belongs to the subgraphs,
-and establishing necessary conditions for the coinductive arguments.
+capturing that the invalid entries belongs to the subgraphs,
+and establishing necessary conditions on them for the coinductive arguments.
 The second group of hypothesis simply characterizes the fact that our renaming is a finite renaming from the domain of $g_2$ to the domain of $g_2'$, despite its very lose typing as a total function.
 Finally, the third hypothesis is the semantically interesting one: the two subgraphs are equivalent at valid inputs.
 Given these, we conclude to the equivalence at valid inputs of the overall graphs.
@@ -495,28 +494,25 @@ Instead, with additional meta-theory from the itrees, we enrich the intermediate
 
 \begin{figure}
 \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid) :
+Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg) (σ : bid -> bid) (nTO: gset bid) :
     (* Well formedness properties, where ## is disjointness of sets or map domains *)
-    (inputs g2 ∩ inputs g2') ## nFROM -> 
-    nFROM ⊆ inputs g2 ∪ inputs g2' ->
     inputs g2' ∖ inputs g2 ⊆ nTO -> 
     nTO ⊆ inputs g2 ∪ inputs g2' -> 
     nTO ## outputs g1 ->
     g1 ## g2 -> 
     ocfg_term_rename σ g1 ## g2' ->
 
-    (* σ is a finite map from the inputs of g2 to the inputs of gs2' *)
+    (* σ is a finite map from the inputs of g2 to the inputs of g2' *)
     (forall id, id ∈ inputs g2 -> (σ id) ∈ inputs g2') ->
-    (forall id, id ∉ nFROM -> (σ id) = id) ->
+    (forall id, id ∉ inputs g2 -> (σ id) = id) ->
 
-    (* The subtituted subgraph is equivalent to the original one *)
-    (forall from to, to ∉ nTO -> from ∉ nFROM -> 
-           ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
+    (* The substituted subgraph is equivalent to the original one *)
+    (forall from to, to ∉ nTO -> 
+      ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
 
     (* Then, the graphs are equivalent from any valid initial start *)
-    forall from to,
-    to ∉ nTO -> from ∉ nFROM ->
-    ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, σ to).
+    forall from to, to ∉ nTO ->
+      ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, σ to).
   \end{lstlisting}
   \caption{The \ilc{denote_ocfg_equiv} theorem}
   \label{fig:ocfg_equiv}
@@ -524,66 +520,75 @@ Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset 
 
 \subsection{Motivations for Block Fusion}
 
-In this section, we will define the Block Fusion optimization, describe a corresponding OCFG pattern,
-and outline the proof of correctness of the optimization using the pattern.
+In this section, we will define the Block Fusion optimization, describe a corresponding \ocfg pattern, and outline the proof of correctness of the optimization using the pattern.
 
 The Block Fusion optimization consists of picking two blocks $A$ and $B$,
 such that $A$ is the only predecessor of $B$ and $B$ is the only successor of $A$,
 and replacing them with a single block containing the code of $A$ and $B$.
 
-This optimization is relevant for three main reasons:\begin{itemize}
-  \item It is a commonly used optimization, for example to clear blocks created while building SSA form.
-  \item It is an optimization that modifies the graph.
-  \item It is simple to prove on paper that the optimization is correct.
-\end{itemize}
+Block Fusion is a relevant optimization for us to choose for multiple reasons. Firstly, it is a commonly used optimization, notably to clean blocks created while building SSA form. Secondly, it is an optimization that modifies the graph. And finally, it is simple on paper to prove that the optimization is correct.
 
-In the previous section, we already gave a pattern for \ilc{BlockFusion}, we will use a slight variation, which allows further composing:\\\ilc{Definition BlockFusion {S} (P: Pattern S) := When (Block (Head P)) BlockFusion_f.}
-
-% \subsection{The semantics of Block Fusion}
-
-\ilc{BlockFusion_f} has two conditions:\begin{itemize}
-  \item the terminator of the first block is an absolute jump to the second block,
-  \item the second block does not have phi nodes.
-\end{itemize}
-
-The first condition is needed (instead of just checking the successors) because, if there is a conditional jump, evaluating the condition may lead to an error, and so to a difference in semantic after the fusion.\\
-The second condition is needed because of the difference in evaluation between phi-nodes and assignment operations.
-
-With this, we can create a \ilc{fusion} function for Block Fusion (\ilc{term_rename} applies \ilc{SIG} to each id in the terminator).
+In Section~\ref{sec:lang}, we gave \ilc{pfusion}, a closed pattern for Block Fusion. In our work, we used an opened variation, which allows further composing. Figure~\ref{fig:bfusion} gives the definition of that pattern, \ilc{BlockFusion}, as well as the definition of \ilc{BlockFusion_f}.
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Definition fusion (σ: bid -> bid) (idA : bid) (A B: blk): blk := {|
-  blk_phis       := A.(blk_phis);
-  blk_code       := A.(blk_code) ++ B.(blk_code);
-  blk_term       := term_rename σ B.(blk_term);
-  blk_comments   := fusion_comments A B
-|}.
+Definition BlockFusion_f {S}: (bid * blk * (bid * blk * S) -> bool) :=
+  fun '(_, A, (idB, B, _)) => is_seq A idB && no_phi B.
+
+Definition BlockFusion {S} (P: Pattern S) := When (Block (Head P)) BlockFusion_f
   \end{lstlisting}
-  \caption{The \ilc{fusion} function}
+  \caption{The \ilc{BlockFusion} pattern}
+  \label{fig:bfusion}
 \end{figure}
 
-We also define \ilc{SIGfusion}, the renaming function for Block Fusion:
+\ilc{BlockFusion_f} asserts that B is the only successor of A. More specifically, it asserts that the terminator \ilc{A} is an absolute jump to \ilc{B}. It also asserts that \ilc{B} has an empty $\phi$-node.
+
+If the first condition only looked at successors, it would accept conditional jumps where both destinations are \ilc{B}. However, it would also accept if the condition of the jump could evaluate to an error. Because of that, we need to only accept absolute jumps.
+
+In the case of multiple assignments in a single $\phi$-node, the semantic of the $\phi$-node will first evaluate each expression, and then do each expression. So, if we replaced a $\phi$-node with a sequence of assignments, the resulting semantics could be different, in the case where one of the expressions evaluates to an error.
+
+Now that we have finished detailing the \ilc{BlockFusion} pattern, we can define the corresponding optimization. Figure~\ref{fig:fusion} gives the definition of \ilc{fusion}, the function that applies the transformation, and \ilc{SIGfusion}, the corresponding renaming function.
+
+\ilc{SIGfusion idA idB} is the identity on every bid except \ilc{idA}, where it returns \ilc{idB} instead. \ilc{fusion} takes a renaming function $\sigma$ and two blocks \ilc{A} and \ilc{B} as arguments. It returns the block composed of \ilc{A}'s $\phi$-nodes, the code of both blocks in sequence, and the terminator of \ilc{B} on which $\sigma$ is applied.
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition σfusion idA idB := fun (id: bid) => if decide (id=idA) then idB else id.
+
+Definition fusion (σ: bid -> bid) (A B: blk): blk := {|
+  blk_phis       := A.(blk_phis);
+  blk_code       := A.(blk_code) ++ B.(blk_code);
+  blk_term       := term_rename σ B.(blk_term)
+|}.
   \end{lstlisting}
+  \caption{The \ilc{fusion} function}
+  \label{fig:fusion}
 \end{figure}
 
-With these, we can prove first that \ilc{fusion} is correct, and then that the Block Fusion optimization is correct.
+To prove the correctness of Block Fusion, we want to leverage the theorem \ilc{denote_ocfg_equiv} established in the previous subsection. To do that, we first need to establish the semantic lemma on the transformed subgraph. Informally, we have to show that \ilc{A ∪ B ~~ fusion A B}. Figure~\ref{fig:fusion_proof} shows the Coq statements for both theorems: \ilc{fusion_correct} and \ilc{Denotation_BlockFusion_correct}.
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Lemma fusion_correct {S} G idA A idB B P (X:S):
+  let σ := σfusion idA idB in
+  (idA, A, (idB, B, X)) ∈ (MatchAll (BlockFusion P) G) ->
+  forall f to : bid, to ∉ {[idB]} ->
+    ⟦ {[idA := A; idB := B]} ⟧bs (f, to) ≈ ⟦ {[idB := fusion σ idA A B]} ⟧bs (f, σ to).
+
 Theorem Denotation_BlockFusion_correct {S} G idA A idB B f to P (X:S):
   let σ := σfusion idA idB in
   let G0 := delete idB (delete idA G) in
   to <> idB ->
-  f <> idA ->
   (idA, A, (idB, B, X)) ∈ (MatchAll (BlockFusion P) G) ->
   ⟦ G ⟧bs (f, to) ≈ ⟦ <[idB:=fusion σ idA A B]> (ocfg_term_rename σ G0) ⟧bs (f, σ to).
       \end{lstlisting}
+      \caption{the correctness theorems of Block Fusion}
+      \label{fig:fusion_proof}
 \end{figure}
+
+The proof of \ilc{fusion_correct} is done by going through the semantics of the two subgraphs and matching the corresponding parts with each other.
+From there, proving \ilc{Denotation_BlockFusion_correct} is straight-froward as we only need to apply \ilc{denote_ocfg_equiv} with \ilc{nTO := \{[idB]\}} and \ilc{SIG := SIGfusion idA idB}.
+\ilc{fusion_correct} gives us the semantic lemma, and the well formedness properties are trivial to prove.
 
 \section{A voir: Approfondissements}
 \label{sec:appr}
