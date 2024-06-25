@@ -108,61 +108,43 @@
 \indent
 For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Computer Science laboratory in ENS Lyon. This internship was supervised by Yannick Zakowski and Gabriel Radanne in the Compilation and Analysis, Software and Hardware Laboratory of the LIP. The goal of this internship was to design and implement a pattern language over control flow graphs to provide a framework for formal proofs on optimizations.
 
-Compilation
+% Compilation
 
-Compilation Vérifiée, i.e., préservation de la sémantique
+% Compilation Vérifiée, i.e., préservation de la sémantique
 
-Dans un assistant de preuve, Coq en l'occurence.
+% Dans un assistant de preuve, Coq en l'occurence.
 
-Des compilateurs vérifiées, y en a qui exisent. en particulier vellvm, donc laius llvm ir.
+% Des compilateurs vérifiées, y en a qui exisent. en particulier vellvm, donc laius llvm ir.
 
-fondements sémantiques de vellvm === interpréteurs monadiques
-raisonnement == bisimilarity
+% fondements sémantiques de vellvm === interpréteurs monadiques
+% raisonnement == bisimilarity
 
-expérience avec vellvm === helix === un gros bazar avec les noms, et la génération de noms frais, etc\dots
+% expérience avec vellvm === helix === un gros bazar avec les noms, et la génération de noms frais, etc\dots
 
-Appelle à des abstractions pour programmer et raisonner sur des passes de génération et de transformation de graphes.
+% Appelle à des abstractions pour programmer et raisonner sur des passes de génération et de transformation de graphes.
 
-Expériences précédentes se sont penchés sur la conception de combinateurs pour construire des graphes, ce qui est pertinent pour un front end.
+% Expériences précédentes se sont penchés sur la conception de combinateurs pour construire des graphes, ce qui est pertinent pour un front end.
 
-Ici, on s'intéresse à un problème complémentaire : lors de l'écriture de passes d'optimizations, il nous faut identifier un sous-graphe satisfaisant des propriétés structurelles particulières, y opérer une transformation, et réintégrer le sous-graphe transformé dans son contexte.
+% Ici, on s'intéresse à un problème complémentaire : lors de l'écriture de passes d'optimizations, il nous faut identifier un sous-graphe satisfaisant des propriétés structurelles particulières, y opérer une transformation, et réintégrer le sous-graphe transformé dans son contexte.
 
-Contributions.
+% Contributions.
+\paragraph{}
+Compilers are extremely complex objects, gcc's~\cite{?} source code is made of about 15 million lines of code. Because of that complexity, it can be hard to assert that compilers follow their specification. For instance, code compiled for aeronautics is usually done without optimizations to reduce the likelihood of unintended behaviors~\cite{?}.
 
-Compilers are extremely complex objects, gcc's source code is made of about 15 million lines of code. Because of that complexity, it can be hard to assert that compilers follow theor specification. For instance, code compiled for aeronautics is usually done without optimisations to reduce the likelyhood of unindented behaviors.
+One possible solution to this dilemma is \emph{verified compilation}. That is, compilers that are proven to preserve the semantics of the source code. Proving this implies defining formal definitions for the semantics of the source language, the target language and proving the preservation of behavior between them. Verified compilers usually rely on proof assistants like Coq~\cite{?}, which allow writing executable code, i.e.\ the compiler, and formal proofs on that code.
 
-One possible solution to this dilema is !emph verified compilation. That is, compilers that are proven to preserve the semantics of the source code. Proving this implies defining formal definitions for the semantics of the source langage, the target langage and the proof of the preservation of behavior between them. Verified compilers usually rely on proof assistants like Coq, which allow writing executable code, i.e. the compiler, and formal proofs on that code.
+Verified compilers have been a research subject for some time now, notably since the CompCert project~\cite{?}, which established a verified compiler for the ISO C 99 language. It is commercialized by AbsInt~\cite{?}, for example for nuclear and aeronautics industries. Our work takes place in the context of the Vellvm project~\cite{?}, which aims at formalizing the semantics of LLVM IR\@. LLVM IR is an intermediate representation used as a front-end and back-end for many languages and architectures. It is based on a Control-Flow Graph (CFG) model, with named blocs and abstract registers.
 
-Verified compilers have been a research subject for some time now, notbaly since the CompCert project, which established a verified compiler for the ISO C 99 langage. It is comercialised by !, for example for nuclear and aeronautics industries. Our work takes place in the context of the Vellvm project, which aims at formalizing the semantics of LLVM IR, an intermedite representation used as a front§end and back§end for many langages and architectures. LLVM IR is based on a Control§Flow Graph model, with named blocs and abstract registers.
+Vellvm has had some applications, notably to prove some IR to IR optimizations~\cite{?}, as well as to establish a verified front-end from Helix to LLVM IR~\cite{?}. One key challenge that was identified from establishing that front-end was fresh identifier generation. This is a reoccurring issue with formal proofs on named systems~\cite{?}. This observation calls for better abstraction for reasoning on graphs. Previous experiments aimed at designing combinators to ease the construction of graphs capturing high-level control flow abstractions, a solution suitable to write front-ends.
 
-Vellvm has had some applications, notably to prove some IR to IR optimizations, as well as to establish a verified front§end from Helix to LLVM IR. One key challenge that was identified from establishing that front§end was fresh identifier generation. This is a reoccuring issue with foraml proofs on named systems.
+\paragraph{}
+My work focused on a orthogonal notion. When writing optimization passes, there is often a need to identify a subgraph with specific structural properties, apply a transformation on it, and link the transformed subgraph back with the context.
 
-This observation calls for better abstraction for reasoning on graphs. Previous experiments aimed at designing combinators to ease the construction of graphs capturing high§lvel control flow abstractions, a solution suitable to write front§ends.
+To address this problematic, I designed a \emph{Domain Specific Language} (DSL) of \emph{patterns} over graphs, \pat{}. It is equipped with a \emph{matcher} which, given a graph, computes the set of \emph{decompositions} that match a given pattern. This matcher is proven to follow a specification capturing at a higher level the structural properties expressed by \pat{}.
 
-Our work focused on a orthogonal notion. When writing optimization passes, there is often a need to identify a subgraph with specific structural properties, apply a transformation on it, and link the transformed subgraph back with the context.
+Following this, I wrote an implementation of the Block Fusion optimization based on \pat{}, and proved it preserves the semantics of the graph. To establish this proof, I have on the one hand proved a generic substitution theorem, and on the other hand leveraged the specification of a pattern to show the structural properties of a captured subgraph matches the requirements for the optimization.
 
-To adress this problematic, I designed a Domain Specific Langage (DSL) of patterns over graphs, ¡pat. It is equipped with a matcher which, given a graph, computes the set of decompositions that matches a given pattern. This matcher is proven to follow a specification capturing at a higher level the structural properties expressed by ¡pat.
-
-Following this, I worte an implementation of the Block Fusion optimization based on ¡pat, and proved it preserves the semantics of the graph. To establish this proof, I have on the one hand proved a generic substitution theorem, and on the other hand leveraged the sepcification of a pattern to show the structural properties of a captured subgraph matches the requirements for the optimization. 
-
-In the remaining of this report, Sectionë¡ref itnroduces the necessary prerequisites on Iteraction Trees and Vellvm. Section ref describes the ¡pat DSL and its semantics. And finally, Section ref convers the Block Fusion case study.
-
-\paragraph{State of the Art}
-
-\leon{Compilation certifiée}
-
-\leon{transformation de code}
-
-\leon{patterns et graphs}
-
-\paragraph{The Contribution of This Work}
-
-\begin{itemize}
-  \item \leon{Design d'un DSL de patterns: \pat + Implémentation naive d'un matcher}
-  \item \leon{Preuve d'un théorème central pour prouver des optims (sur un CFG)}
-  \item \leon{Utiliser ce langage pour block fusion + preuve de correction}
-\end{itemize}
-\paragraph{Premier exemple: CCstP}
+In the remaining of this report, Section~\ref{sec:background} introduces the necessary prerequisites on Interaction Trees and Vellvm. Section~\ref{sec:lang} describes the \pat{} DSL and its semantics. And finally, Section~\ref{sec:deno} covers the Block Fusion case study.
 
 \section{Background}
 \label{sec:background}
@@ -184,11 +166,11 @@ CoInductive itree (E : Type -> Type) (R : Type) : Type :=
   \label{fig:itree}
 \end{figure}
 
-To reason over ITrees, we have multiple notions of \emph{bisimulation}. The most relevant one is \emph{weak bisimulation}, noted \ilc{t1 ≈ t2}. We say that \ilc{t1 ≈ t2} if they return the same value, and have the same visible events. This relation is an equivalence ``up-to-Tau'' in the sense that we have \ilc{Tau t ≈ t} and \ilc{t ≈ Tau t}. This equivalence can be refined up to a relationship $R : A \rightarrow B \rightarrow Prop$: we then have $\ilc{Ret}\; a \approx_R \ilc{Ret}\; b \iff R\; a\; b$. 
+To reason over ITrees, we have multiple notions of \emph{bisimilarity}. The most relevant one is \emph{weak bisimilarity}, noted \ilc{t1 ≈ t2}. We say that \ilc{t1 ≈ t2} if they return the same value, and have the same visible events. This relation is an equivalence ``up-to-Tau'' in the sense that we have \ilc{Tau t ≈ t} and \ilc{t ≈ Tau t}. This equivalence can be refined up to a relationship $R : A \rightarrow B \rightarrow Prop$: we then have $\ilc{Ret}\; a \approx_R \ilc{Ret}\; b \iff R\; a\; b$. 
 
 Effects can easily be added or removed from the semantics of an ITree. The \ilc{Vis} constructor represents \emph{uninterpreted events}. By defining an \emph{event handler}, semantics are assigned to these events. Interpreting an ITree then consists of folding that handler over the ITree. This allows the semantics of ITrees to be \emph{modular}.
 
-Furthermore, the semantics of ITrees are also \emph{compositional} with the use of \emph{combinators}. For example, \ilc{bind: itree E A -> (A -> itree E B) -> itree E B} allows composing ITrees (with the use of continuations).
+Furthermore, the semantics of ITrees are also \emph{compositional} with the use of \emph{combinators}. For example,\ilc{bind: itree E A -> (A -> itree E B) -> itree E B} allows composing ITrees (with the use of continuations).
 Other combinators include \ilc{iter: (A -> itree E (A+B)) -> (A -> itree E B)} to encode the iterations and hide the co-induction (by hiding each body step in a Tau), and \ilc{mrec} for mutual-recursive combinators. 
 
 Unlike similar projects, which rely on \emph{operational semantics} and simulation diagrams, ITrees rely on \emph{denotational semantics}. It is based on equations that can be used to prove bisimulation. These equations allow the user to reason without using coinductive reasoning or the definition of the weak bisimulation. The compositionality of the semantics also allow simpler reasoning than operational semantics, since program counter and similar notions are lifted away.
