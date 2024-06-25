@@ -108,10 +108,13 @@
 \indent
 For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Computer Science laboratory in ENS Lyon. This internship was supervised by Yannick Zakowski and Gabriel Radanne in the Compilation and Analysis, Software and Hardware Laboratory of the LIP. The goal of this internship was to design and implement a pattern language over control flow graphs to provide a framework for formal proofs on optimizations.
 
-\leon{Compilation certifiée AJD}
+\paragraph{State of the Art}
 
-\paragraph{}
-\leon{Importance de la compilation certifiée, et surtout de certifier les optims.}
+\leon{Compilation certifiée}
+
+\leon{transformation de code}
+
+\leon{patterns et graphs}
 
 \paragraph{The Contribution of This Work}
 
@@ -127,7 +130,7 @@ For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Comp
 
 \subsection{Interaction Trees}
 
-Interaction Trees (ITrees) are a co-inductive structure designed to represent the dynamic behaviors of a computation. The goal of ITrees is to model recursive and effectful programs, including divergent computations.
+Interaction Trees (ITrees) are a coinductive structure designed to represent the dynamic behaviors of a computation. The goal of ITrees is to model recursive and effectful programs, including divergent computations.
 
 Figure~\ref{fig:itree} show the Coq definition of ITrees. An instance of the type features an \emph{event} type \ilc{E: Type -> Type}, and a return type \ilc{R: Type}. The definition uses three constructors: \ilc{Ret} corresponds to halting and returning a value of type \ilc{R}; \ilc{Tau} corresponds to a \emph{silent step}, i.e. an internal computation, followed by computation \ilc{t}; and \ilc{Vis} corresponds to a \emph{visible event}, it describes an external computation \ilc{e} which returns a value of type \ilc{A}, and a continuation \ilc{k} which depends on that return value.
 
@@ -149,7 +152,7 @@ Effects can easily be added or removed from the semantics of an ITree. The \ilc{
 Furthermore, the semantics of ITrees are also \emph{compositional} with the use of \emph{combinators}. For example, \ilc{bind: itree E A -> (A -> itree E B) -> itree E B} allows composing ITrees (with the use of continuations).
 Other combinators include \ilc{iter: (A -> itree E (A+B)) -> (A -> itree E B)} to encode the iterations and hide the co-induction (by hiding each body step in a Tau), and \ilc{mrec} for mutual-recursive combinators. 
 
-Unlike similar projects, which rely on \emph{operational semantics} and simulation diagrams, ITrees rely on \emph{denotational semantics}. It is based on equations that can be used to prove bisimulation. These equations allow the user to reason without using co-inductive reasoning or the definition of the weak bisimulation. The compositionality of the semantics also allow simpler reasoning than operational semantics, since program counter and similar notions are lifted away.
+Unlike similar projects, which rely on \emph{operational semantics} and simulation diagrams, ITrees rely on \emph{denotational semantics}. It is based on equations that can be used to prove bisimulation. These equations allow the user to reason without using coinductive reasoning or the definition of the weak bisimulation. The compositionality of the semantics also allow simpler reasoning than operational semantics, since program counter and similar notions are lifted away.
 
 \subsection{Vellvm}
 
@@ -366,7 +369,7 @@ Definition heads_sem (G G':ocfg) (id:bid) b := heads_aux_sem G G G' id b.
   \label{fig:sem_head_def}
 \end{figure}
 
-Finally, as show in Figure~\ref{fig:head_cor} we can prove the semantics for the auxiliary function, the \ilc{heads} function and \ilc{MatchAll Head}.
+Finally, as show in Figure~\ref{fig:head_cor} we can prove the semantics for the auxiliary function, the \ilc{heads} function and \ilc{MatchAll Head}. We first prove \ilc{heads_aux_correct} by induction on \ilc{G}, then \ilc{heads_correct} and \ilc{Pattern_Head_correct} follow immediately.
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
@@ -437,10 +440,11 @@ forall (g1 g2 g2' : ocfg) (σ : bid -> bid):
 This second statement remains insufficient to show the soundness of an optimization such as block fusion. Indeed, if we try start executing from the fused block $b_2$, the semantics are obviously different, one executing the code from $b_1$ and not the other.
 
 More generally, we need to constrain the valid entry blocks of the graph. 
-To do so, we introduce two sets of bids \ilc{nTO} and \ilc{nFROM} to restrict the equations to valid input and origin bids.
+To do so, we introduce two sets of bids \ilc{nTO} and \ilc{nFROM} to restrict the equations to valid input and origin bids by listing the invalid inputs and origin bids.
 With this in hand, we can state the main contextual theorem we establish, displayed on Figure~\ref{fig:ocfg_equiv}.
-The first series of hypotheses are tedious well-formedness conditions expressing that the context ($g_1$) and the subgraphs ($g_2$ and $g_2'$) are disjoint,
-and capturing that the valid source ($nFROM$) belongs to the context, while the valid entry ($nTO$) belongs to the subgraphs.
+The first series of hypotheses are well-formedness conditions expressing that the context ($g_1$) and the subgraphs ($g_2$ and $g_2'$) are disjoint,
+capturing that the invalid sources ($nFROM$) and entries ($nTO$) belongs to the subgraphs,
+and establishing necessary conditions for the coinductive arguments.
 The second group of hypothesis simply characterizes the fact that our renaming is a finite renaming from the domain of $g_2$ to the domain of $g_2'$, despite its very lose typing as a total function.
 Finally, the third hypothesis is the semantically interesting one: the two subgraphs are equivalent at valid inputs.
 Given these, we conclude to the equivalence at valid inputs of the overall graphs.
