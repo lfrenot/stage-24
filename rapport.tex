@@ -385,22 +385,28 @@ For the extracting constructors, \ilc{Focus, Block, Head} and \ilc{Branch}, \ilc
 \subsection{Specification}
 
 \yzt{We have claimed that \ilc{MatchAll} \emph{returns all valid decompositions}. We capture this statement by providing specifications for each constructor of \pat, and proving they are exactly captures by \ilc{MatchAll}.}
+\gr{For this purpose, we will give a generic specification for \emph{opened patterns}, i.e. constructors parameterized by a pattern.}
 
-A specification for a opened pattern \ilc{PatF} of type \ilc{Pattern S -> Pattern (f S)} is a function \ilc{R_PatF} of type \ilc{ocfg -> Pattern S -> f S -> Prop}. We say that \ilc{MatchAll} is correct for that specification if we have:\\\ilc{forall (G: ocfg) (pat: Pattern S) (X:f S), X IN MatchAll (PatF pat) G IFF R_PatF G pat X}.
+A specification for an opened pattern \ilc{PatF} of type \ilc{Pattern S -> Pattern (f S)} is a function \ilc{R_PatF} of type \ilc{ocfg -> Pattern S -> f S -> Prop}. We say that \ilc{MatchAll} is correct for that specification if we have:
+\[
+  \ilc{forall (G: ocfg) (pat: Pattern S) (X:f S), X IN MatchAll (PatF pat) G IFF R_PatF G pat X}
+\]
 
 Similarly, a specification for a closed pattern \ilc{pat: Pattern S} is \ilc{R_pat: ocfg -> S -> Prop}. \ilc{MatchAll} is correct for it if: \ilc{forall (G:ocfg) (X:S), X IN MatchAll pat G IFF R_pat G X}. 
 
-The correction for \ilc{Graph} is given by the following theorem:\\\ilc{forall G G', G' ∈ (MatchAll Graph G) IFF G' = G.} Its proof is immediate by definition of \ilc{MatchAll Graph}.
+\gr{Let us start with} the correction for \ilc{Graph}: \ilc{forall G G', G' ∈ (MatchAll Graph G) IFF G' = G.} Its proof is immediate by definition of \ilc{MatchAll Graph}.
 
 The correction for \ilc{fun P f -> When P f} is given by the following theorem:\\\ilc{forall (P: Pattern S) f X G, X ∈ (MatchAll (When P f) G) IFF f X = true \/\\ X ∈ (MatchAll P G).} We can also give a theorem for the correctness of \ilc{Map}. Proving their correctness is then immediate using builtin lemmas on \ilc{filter} and \ilc{map}.
 
 The same proof mechanism is used for \ilc{Focus}, \ilc{Block}, \ilc{Head} and \ilc{Branch}. We will now detail it for \ilc{Head}.
-
+%
 % \ilc{MatchAll} relies on the \ilc{heads} function to match the \ilc{Head} constructor. The goal of that function is to find all the "heads", i.e. blocks without predecessors, in an OCFG. To do that, it folds a \ilc{heads_aux} function over the map. That function calls the \ilc{predecessors} function on each block, and appends the result to the return list if the block doesn't have predecessors.
+%
+Figure~\ref{fig:sem_head_def} gives a semantic definition for \ilc{Head}. It is composed of two parts: \ilc{heads_aux_sem} which gives semantics for the auxiliary function, which is used to prove its correctness, and \ilc{heads_sem} which gives the actual semantics for \ilc{Head} and is used \gr{manque un bout?}
+%
+Finally, as show in Figure~\ref{fig:head_cor} we can prove the semantics for the auxiliary function, the \ilc{heads} function and \ilc{MatchAll Head}. We first prove \ilc{heads_aux_correct} by induction on \ilc{G}, then \ilc{heads_correct} and \ilc{Pattern_Head_correct} follow immediately.
 
-Figure~\ref{fig:sem_head_def} gives a semantic definition for \ilc{Head}. It is composed of two parts: \ilc{heads_aux_sem} which gives semantics for the auxiliary function, which is used to prove its correctness, and \ilc{heads_sem} which gives the actual semantics for \ilc{Head} and is used 
-
-\begin{figure}
+\begin{figure}[h]
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Record heads_aux_sem (G0 G G': ocfg) id b := {
   EQ: G' = delete id G0;
@@ -411,12 +417,11 @@ Record heads_aux_sem (G0 G G': ocfg) id b := {
 Definition heads_sem (G G':ocfg) (id:bid) b := heads_aux_sem G G G' id b.
   \end{lstlisting}
   \caption{The semantic definition for \ilc{Head}}
+  \gr{Rajoute des commentaires}
   \label{fig:sem_head_def}
-\end{figure}
-
-Finally, as show in Figure~\ref{fig:head_cor} we can prove the semantics for the auxiliary function, the \ilc{heads} function and \ilc{MatchAll Head}. We first prove \ilc{heads_aux_correct} by induction on \ilc{G}, then \ilc{heads_correct} and \ilc{Pattern_Head_correct} follow immediately.
-
-\begin{figure}
+% \end{figure}
+  \vspace{1em}
+% \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Lemma heads_aux_correct:
   forall G G' G0 id b,
@@ -431,7 +436,8 @@ Theorem Pattern_Head_correct {S}:
   (id, b, X) ∈ (MatchAll (Head P) G) IFF
   exists G', heads_sem G G' id b /\ X ∈ (MatchAll P G').
   \end{lstlisting}
-  \caption{The semantic proof of \ilc{MatchAll Head}}
+  \caption{The correctness statement of \ilc{MatchAll Head}}
+  \gr{Rajoute des commentaires}
   \label{fig:head_cor}
 \end{figure}
 
