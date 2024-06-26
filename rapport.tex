@@ -99,9 +99,9 @@
 
 \hypersetup{colorlinks=true, linkcolor=red}
 
-\begin{abstract}
-  \leon{Abstract}
-\end{abstract}
+% \begin{abstract}
+%   \leon{Abstract}
+% \end{abstract}
 
 \section{Introduction}
 \label{sec:intro}
@@ -150,45 +150,7 @@ In the remaining of this report, Section~\ref{sec:background} introduces the nec
 \section{Background}
 \label{sec:background}
 
-\gr{Pourquoi ne pas mettre Vellvm d'abord ? C'est plus ``grand publique'' et c'est plus facile d'expliquer l'interet des itrees}
-
-\subsection{Interaction Trees}
-
-\gr{At the heart of Vellvm's formalisation of LLVM is the notion of Interaction Trees.}
-
-
-Interaction Trees (ITrees) are a coinductive structure designed to represent the dynamic behaviors of a computation. The goal of ITrees is to model recursive and effectful programs, including divergent computations.
-
-Figure~\ref{fig:itree} show the Coq definition of ITrees. \gr{It has two parameters:} an \emph{event} type \ilc{E: Type -> Type}, and a return type \ilc{R: Type}. The definition uses three constructors: \ilc{Ret} corresponds to halting and returning a value of type \ilc{R}; \ilc{Tau} corresponds to a \emph{silent step}, i.e. an internal computation, followed by computation \ilc{t}; and \ilc{Vis} corresponds to a \emph{visible event}, it describes an external computation \ilc{e} which returns a value of type \ilc{A}, and a continuation \ilc{k} which depends on that return value.
-
-\begin{figure}
-  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-CoInductive itree (E : Type -> Type) (R : Type) : Type :=
-  | Ret (r : R)
-  | Tau (t : itree E R)
-  | Vis {A : Type} (e : E A) (k : A -> itree E R).
-  \end{lstlisting}
-  \caption{The \ilc{itree} datatype}
-  \label{fig:itree}
-\end{figure}
-
-\gr{A ce stade, il nous faudrait un example de programme et de son arbre. Potentielement le piquer d'un article (en citant)}
-
-\gr{Rajoute une explication rapide de ce qu'implique ``coinductif'' ici: les arbres peuvent être infini, etc. Probablement enlever la notion de ``coinductif'' de la première phase de la section}
-
-Effects can easily be added or removed from the semantics of an ITree. The \ilc{Vis} constructor represents \emph{uninterpreted events}. By defining an \emph{event handler}, semantics are assigned to these events. Interpreting an ITree then consists of folding that handler over the ITree. This allows the semantics of ITrees to be \emph{modular}.
-
-Furthermore, the semantics of ITrees are also \emph{compositional} with the use of \emph{combinators}. For example,\ilc{bind: itree E A -> (A -> itree E B) -> itree E B} allows composing ITrees (with the use of continuations).
-Other combinators include \ilc{iter: (A -> itree E (A+B)) -> (A -> itree E B)} to encode the iterations and hide the co-induction (by hiding each body step in a Tau), and \ilc{mrec} for mutual-recursive combinators. 
-\gr{Je pense que donner les types n'apporte rien du tout ici. Dit plutot simplement qu'on peut donner des fonctions qui permettent de construire la séquence de deux itrees, ou l'itéré d'un itree (et explique ce que ca veut dire, du point de vue d'un programme)}
-
-\gr{J'ai déplacé ca plus tard}
-To reason over ITrees, we have multiple notions of \emph{bisimilarity}. The most relevant one is \emph{weak bisimilarity}, noted \ilc{t1 ≈ t2}. We say that \ilc{t1 ≈ t2} if they return the same value, and have the same visible events. This relation is an equivalence ``up-to-Tau'' in the sense that we have \ilc{Tau t ≈ t} and \ilc{t ≈ Tau t}. This equivalence can be refined up to a relationship $R : A \rightarrow B \rightarrow Prop$: we then have $\ilc{Ret}\; a \approx_R \ilc{Ret}\; b \iff R\; a\; b$.
-\gr{Tout sert la dedans ? Je pense qu'il ne faut présenter que ce dont tu vas avoir besoin. Aussi: cite}
-
-Unlike similar projects, which rely on \emph{operational semantics} and simulation diagrams, ITrees rely on \emph{denotational semantics}. It is based on equations that can be used to prove bisimulation. These equations allow the user to reason without using coinductive reasoning or the definition of the weak bisimulation. The compositionality of the semantics also allow simpler reasoning than operational semantics, since program counter and similar notions are lifted away.
-
-\subsection{Vellvm}
+\subsection{LLVM and Vellvm}
 
 \leon{TODO: figures (vir syntax and intrep stack)}
 
@@ -201,13 +163,56 @@ The LLVM IR is an instruction set similar to low-level assembly languages like R
 %
 Optimizations and analysis on the LLVM IR are done through successive \emph{analysis and transformation passes}.
 
-Vellvm introduces Verified LLVM IR (VIR), a \emph{realistic subset} of the LLVM IR. Figure~\ref{vir} shows a subset of VIR's syntax. VIR's semantics are defined with ITrees: each element of VIR's syntax is represented by a corresponding ITree. Each effect (except control flow) is captured by a \ilc{Vis} event, which can be interpreted later. This semantic includes many non-trivial features of LLVM IR, including pointers, LLVM's $\phi$-nodes and undefined behaviors.
+\subsection{Interaction Trees}
+
+The core of Vellvm's formalization relies on Interaction Trees (ITrees).
+
+ITrees are a data structure designed to represent the dynamic behaviors of a computation. Itrees are a coinductive structure, meaning they represent potentially infinite trees. This allows ITrees to model recursive and effectful programs, including divergent computations.
+
+Figure~\ref{fig:itree} show the Coq definition of ITrees. It has two parameters: an \emph{event} type \ilc{E: Type -> Type}, and a \emph{return} type \ilc{R: Type}. The definition uses three constructors: \ilc{Ret} corresponds to halting and returning a value of type \ilc{R}; \ilc{Tau} corresponds to a \emph{silent step}, i.e. an internal computation, followed by computation \ilc{t}; and \ilc{Vis} corresponds to a \emph{visible event}, it describes an external computation \ilc{e} which returns a value of type \ilc{A}, and a continuation \ilc{k} which depends on that return value.
+
+\begin{figure}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+CoInductive itree (E : Type -> Type) (R : Type) : Type :=
+  | Ret (r : R)
+  | Tau (t : itree E R)
+  | Vis {A : Type} (e : E A) (k : A -> itree E R).
+  \end{lstlisting}
+  \caption{The \ilc{itree} datatype}
+  \label{fig:itree}
+\end{figure}
+
+\citet{?} provide concrete examples of ITrees. For example, we can define an effect type \ilc{IO}, corresponding to simple inputs and outputs over integers. With \ilc{IO}, we can establish an ITree \ilc{echo} which loops forever, echoing each input received to the output:
+\begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Inductive IO : Type -> Type :=
+  | Input : IO nat
+  | Output : nat -> IO unit.
+
+CoFixpoint echo : itree IO void :=
+  Vis Input (fun x => Vis (Output x) (fun _ => echo)).
+\end{lstlisting}
+
+Effects can easily be added or removed from the semantics of an ITree. The \ilc{Vis} constructor represents \emph{uninterpreted events}. By defining an \emph{event handler}, semantics are assigned to these events. Interpreting an ITree then consists of folding that handler over the ITree. This allows the semantics of ITrees to be \emph{modular}.
+Furthermore, the semantics of ITrees are also \emph{compositional} with the use of \emph{combinators}. For example, composing ITrees can be handled by the combinator \ilc{bind}.
+
+To reason over ITrees, we have multiple notions of \emph{bisimilarity}. The most relevant one for our work is \emph{weak bisimilarity}, noted \ilc{t1 ≈ t2}. We say that \ilc{t1 ≈ t2} if they return the same value, and have the same visible events. Notably, this relation is an equivalence ``up-to-Tau'', in the sense that we have \ilc{Tau t ≈ t} and \ilc{t ≈ Tau t}. 
+% This equivalence can be refined up to a relationship $R : A \rightarrow B \rightarrow Prop$: we then have $\ilc{Ret}\; a \approx_R \ilc{Ret}\; b \iff R\; a\; b$.
+% \gr{Tout sert la dedans ? Je pense qu'il ne faut présenter que ce dont tu vas avoir besoin. Aussi: cite}
+
+Unlike similar projects, which rely on \emph{operational semantics} and simulation diagrams, ITrees rely on \emph{denotational semantics}. It is based on equations that can be used to prove bisimulation. These equations allow the user to reason without using coinductive reasoning or the definition of the weak bisimulation. The compositionality of the semantics also allow simpler reasoning than operational semantics, since program counter and similar notions are lifted away.
+
+\subsection{Vellvm's semantics}
+
+
+Vellvm introduces Verified LLVM IR (VIR), a \emph{realistic subset} of the LLVM IR. Figure~\ref{vir} shows a subset of VIR's syntax.
+
+Each element of VIR's syntax is represented by a corresponding ITree. Each effect (except control flow) is captured by a \ilc{Vis} event, which can be interpreted later. This semantic includes many non-trivial features of LLVM IR, including pointers, LLVM's $\phi$-nodes and undefined behaviors.
 
 Since the semantics of a block or set of blocks can be defined without relying on a ``complete'' CFG, it is possible to use ``open control-flow graphs'' (\ocfg), which is simply a set of blocks without a defined entry point.
 
 To interpret the semantics of the different effects of its syntax, Vellvm uses a stack of interpreters. It gradually introduces external elements to the semantic (intrinsics, global and local environments, \ldots). Figure~\ref{interp} show that stack of interpretation. The final levels split between a \emph{propositional} model, which interprets the non-determinism of LLVM IR's undefined behaviors, and an \emph{executable} model, which implements one of these behaviors.
 
-\gr{In the context of this internship, I will interact with layer X.}
+Since this internship mainly focused on structural properties, we will only interact with layer 0. That is, with control flow as the only interpreted events.
 
 \section{The pattern language}
 \label{sec:lang}
@@ -242,9 +247,9 @@ To this end, we introduce \pat, a general, very expressive DSL for pattern match
     | When: forall  {S}, Pattern S -> (S -> bool) -> Pattern S
     | Map: forall  {S} {T}, Pattern S -> (S -> T) -> Pattern T
     | Focus: forall  {S}, Pattern S -> Pattern (ocfg * S)
-    | Block: forall  {S}, Pattern S -> Pattern (bid * blk * S)
-    | Head: forall  {S}, Pattern S -> Pattern (bid * blk * S)
-    | Branch: forall  {S}, Pattern S -> Pattern (bid * blk * S)
+    | Block: forall  {S}, Pattern S -> Pattern (block_id * blk * S)
+    | Head: forall  {S}, Pattern S -> Pattern (block_id * blk * S)
+    | Branch: forall  {S}, Pattern S -> Pattern (block_id * blk * S)
   \end{lstlisting}
   \caption{The \ilc{Pattern} datatype}
   \label{fig:pat}
@@ -265,23 +270,15 @@ The \ilc{Block} constructor extracts any block from the graph and matches the pa
 The \ilc{Head} constructor extracts a block without predecessors from the graph and matches the pattern given as argument against the rest of the graph.
 The \ilc{Branch} constructor extracts a block whose terminator is a branch from the graph and matches the pattern given as argument against the rest of the graph.
 
-
-\gr{Je déplacerai ces trois paragraphes pour plus tard, sous un label ``Discussoun around the constructors''. Ici, il nous faut un example}
-This set of patterns is not minimal. Indeed, \ilc{fun p => Block p} could be written as\\\ilc{fun p => When (Focus p) (fun '(l, _) => size l = 1)}, and \ilc{fun p => Branch p} could be written as \ilc{fun p => When (Block p) (fun '(id, b, _) => term_is_branch b)}. Finding a minimal set was not a goal of the DSL as the main concern was ease of use, both for the user, for designing a matcher, and for establishing the meta-theory. 
-
-\ilc{Map} and the functoriality it brings feel natural to add and are easy to implement and prove. But we have no immediate use for it at this time. An argument against \ilc{Map} could be made, as every other constructor allows working backwards to rebuild the graph by recombining the extracted part (as long as it matches with something).
-
-\ilc{Map} also makes \ilc{Head} a minimal constructor. Indeed, while \ilc{Head Graph} can be written as \ilc{When (Block Graph) (fun '(id, b, g) => is_head id g)}, there is no function f such that\\\ilc{Head Map Graph (fun _ => ())} can be written as \ilc{When (Block Map (fun _ => ())) f}, since we loose the information on the rest of the graph.
-
-While a user will want to work using closed instances of pattern, that is objects of type \ilc{Pattern S}, our proofs work on open instances of pattern, that is objects of type\\\ilc{Pattern S -> Pattern (f S)}, to allow compositionality. We will call these objects \emph{opened patterns} \leon{ou open patterns?}. Note that constructors other than \ilc{Graph} are opened patterns.
-
 \paragraph*{An example of pattern: block fusion.}
 We illustrate the use of \pat{} to implement\footnote{Or rather, to \emph{specify} such an optimization. We discuss briefly executability in conclusion.} a bloc fusion optimization.
 Block Fusion typically consists of finding two blocks (A and B) such that A is the only predecessors of B, B is the only successor of A, and B is not the graph's entry point. Since an execution of A is always followed by B, and an execution of B is always preceded by A, we can replace them by a single block that follows the execution of both A and B.
 
 The applicable subgraphs are specified with the pattern:
-\[\ilc{pfusion := When (Block (Head Graph)) BlockFusion\_f}\]
-The pattern starts by the \ilc{Block} to match any block \ilc{A} Then, \ilc{Head} matches a block \ilc{B} that has no predecessors (except possibly \ilc{A} as it is not in scope of the pattern anymore), and finally \ilc{When _ BlockFusion\_f} asserts that \ilc{B} is the only successor of \ilc{A}.
+\begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+pfusion := When (Block (Head Graph)) BlockFusion\_f
+\end{lstlisting}
+The pattern starts with \ilc{Block} to match any block \ilc{A} Then, \ilc{Head} matches a block \ilc{B} that has no predecessors (except possibly \ilc{A} as it is not in scope of the pattern anymore), and finally \ilc{When _ BlockFusion\_f} asserts that \ilc{B} is the only successor of \ilc{A}.
 
 \begin{figure}
   \xymatrix{
@@ -298,7 +295,15 @@ The pattern starts by the \ilc{Block} to match any block \ilc{A} Then, \ilc{Head
 
 Figure~\ref{fig:gfusion} illustrates graphically the shape of the graph decompositions that match \ilc{pfusion}. The full lines (\ilc{A, B} and the arrow between them) represent the parts fixed by \ilc{pfusion}. The dashed lines refer to parts that are allowed, but not necessarily them: other blocks in the graphs with arrows coming towards \ilc{A} or from \ilc{B} (but not in the middle of them). The dotted lines 
 show the \ilc{When} constructor.
-% \yz{Refer to and explain the figure! "Figure~2 illustrate graphically the shape of the graph decompositions that match \ilc{pfusion} ..." Use the names suggested above, and explain the meaning of the different arrows.}
+
+\paragraph*{Discussion around the constructors}
+The set of constructors for \pat is not minimal. Indeed, \ilc{fun p => Block p} could be written as \ilc{fun p => When (Focus p) (fun '(l, _) => size l = 1)}, and \ilc{fun p => Branch p} could be written as\\\ilc{fun p => When (Block p) (fun '(id, b, _) => term_is_branch b)}. Finding a minimal set was not a goal of the DSL as the main concern was ease of use, both for the user, for designing a matcher, and for establishing the meta-theory. 
+
+\ilc{Map} and the functoriality it brings feel natural to add and are easy to implement and prove. But we have no immediate use for it at this time. An argument against \ilc{Map} could be made, as every other constructor allows working backwards to rebuild the graph by recombining the extracted part (as long as it matches with something).
+
+\ilc{Map} also makes \ilc{Head} a minimal constructor. Indeed, while \ilc{Head Graph} can be written as \ilc{When (Block Graph) (fun '(id, b, g) => is_head id g)}, there is no function f such that\\\ilc{Head Map Graph (fun _ => ())} can be written as \ilc{When (Block Map (fun _ => ())) f}, since we loose the information on the rest of the graph.
+
+While a user will want to work using closed instances of pattern, that is objects of type \ilc{Pattern S}, our proofs work on open instances of pattern, that is objects of type\\\ilc{Pattern S -> Pattern (f S)}, to allow compositionality. We will call these objects \emph{opened patterns}. Note that constructors other than \ilc{Graph} are opened patterns.
 
 \subsection{Matcher functions}
 \label{sec:matcher}
@@ -308,10 +313,16 @@ A matcher function takes a pattern \ilc{p} and an \ocfg{} \ilc{G} as arguments, 
 We have mainly focused on \emph{specifying} patterns, by implementing a matcher that returns \emph{all} valid decompositions. 
 Although rather meant as a specification than as a realistic implementation, the \ilc{MatchAll} function, depicted in Figure~\ref{fig:matchall}, is nonetheless executable. This not only allows testing, but also drastically reduces the distance left to bridge to have an efficient implementation that is provably sound.
 
-\gr{Cette description est le moment crucial, il faut que ca soit beaucoup plus
-  clair ce qu'il se passe}
-\gr{In practice, our matcher turns a list:}
-it computes recursively the decomposition according to the sub-pattern, and flat maps (Definition provided on Figure~\ref{fig:flatmap})\gr{Dit ce que ca fait} a function for each constructor extending the decomposition according to the head constructor.
+% \gr{Cette description est le moment crucial, il faut que ca soit beaucoup plus
+%   clair ce qu'il se passe}
+% \gr{In practice, our matcher turns a list:}
+% it computes recursively the decomposition according to the sub-pattern, and flat maps (Definition provided on Figure~\ref{fig:flatmap})\gr{Dit ce que ca fait} a function for each constructor extending the decomposition according to the head constructor.
+
+\ilc{MatchAll} returns a list of each decomposition that matches the pattern. It recursively computes the decomposition according to the sub-pattern. We can identify three way the constructors are computed: \ilc{MatchAll Graph} returns the singleton containing the graph. \ilc{MatchAll When/Map} first computes the sub-pattern and then applies the filter/map function over the resulting list. For the extracting constructors, \ilc{Focus, Block, Head} and \ilc{Branch}, the goal is to first extract an element from the graph, and then apply the sub-pattern.
+
+To extract an element, \ilc{MatchAll} relies on decomposition functions, whose definitions are given in Figure~\ref{fig:match_sub_funs}. These functions each rely on an auxiliary function which is folded over the graph to find each matching element. For example, the \ilc{Focus} constructor relies on the \ilc{focus} function. It folds an auxiliary function \ilc{focus_aux} over the graph to get each subgraph, and then maps an additional function to get the complementary subgraphs. The folding recursively computes each subgraph: it starts with the singleton containing the empty map, and, on each iteration, \ilc{focus_aux} returns a list containing each of the map given as argument, and each of them with a new block inserted.
+
+Extracting an element returns a list of type \ilc{list S*ocfg}. We then have to apply the sub-pattern over the \ocfg on the right hand side. To do that, for each element of the return list, the function \ilc{flat_map_r} (Definition provided on Figure~\ref{fig:flatmap}) matches the sub-patterns to the right-hand side, which gives another \ilc{list T*ocfg}, maps the original left-hand side back on it, so we have a \ilc{list S*T*ocfg}, and appends the resulting lists together. 
 
 \begin{figure}
   \label{fig:match}
@@ -337,7 +348,7 @@ Definition flat_map_r {A B C} (f : B -> list C) (l : list (A*B)) : list (A*C) :=
   match l with
     | [] => []
     | (a, b)::q => (map (fun c => (a, c)) (f b))++flat_map_r f q
-end.
+  end.
   \end{lstlisting}
   \caption{The \ilc{flat_map_r} function}
   \label{fig:flatmap}
@@ -345,99 +356,99 @@ end.
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition focus_aux id b acc : list ocfg := acc ++ (map (insert id b) acc).
-
 Definition focus (G: ocfg) := map (fun G' => (G', G ∖ G')) (map_fold focus_aux [∅] G).
   \end{lstlisting}
   
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Definition blocks_aux (G: ocfg) : (bid*blk) -> (bid*blk*ocfg) :=
+Definition blocks_aux (G: ocfg) : (block_id*blk) -> (block_id*blk*ocfg) :=
   fun '(id, b) => (id, b, delete id G).
-
-Definition blocks (G: ocfg): list (bid*blk*ocfg) :=
+Definition blocks (G: ocfg): list (block_id*blk*ocfg) :=
   map (blocks_aux G) (map_to_list G).
   \end{lstlisting}
   
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Definition heads_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
+Definition heads_aux (G: ocfg) id b acc : list (block_id*blk*ocfg) :=
   if is_empty (predecessors id G)
   then (id, b, delete id G)::acc
   else acc.
-
-Definition heads (G: ocfg): list (bid*blk*ocfg) := map_fold (heads_aux G) [] G.
+Definition heads (G: ocfg): list (block_id*blk*ocfg) := map_fold (heads_aux G) [] G.
   \end{lstlisting}
   
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Definition branches_aux (G: ocfg) id b acc : list (bid*blk*ocfg) :=
+Definition branches_aux (G: ocfg) id b acc : list (block_id*blk*ocfg) :=
   match b.(blk_term) with
     | TERM_Br _ l r => (id, b, (delete id G))::acc
     | _ => acc
   end.
-
-Definition branches (G: ocfg): list (bid*blk*ocfg) := map_fold (branches_aux G) [] G.
+Definition branches (G: ocfg): list (block_id*blk*ocfg) := map_fold (branches_aux G) [] G.
   \end{lstlisting}
   \caption{\ilc{MatchAll}'s subfunctions}
   \label{fig:match_sub_funs}
 \end{figure}
 
-For the extracting constructors, \ilc{Focus, Block, Head} and \ilc{Branch}, \ilc{MatchAll} also relies on decomposition functions, whose definitions are given in Figure~\ref{fig:match_sub_funs}. These functions each rely on an auxiliary function which is folded over the graph to find each matching element.
-\gr{La, tu n'expliques rien. Prends en une en particulier, et explique la!!}
-
 \subsection{Specification}
 
 \yzt{We have claimed that \ilc{MatchAll} \emph{returns all valid decompositions}. We capture this statement by providing specifications for each constructor of \pat, and proving they are exactly captures by \ilc{MatchAll}.}
-\gr{For this purpose, we will give a generic specification for \emph{opened patterns}, i.e. constructors parameterized by a pattern.}
+\gr{For this purpose, we will give a generic specification for \emph{opened patterns}, i.e. patterns parameterized by a sub-pattern.}
 
 A specification for an opened pattern \ilc{PatF} of type \ilc{Pattern S -> Pattern (f S)} is a function \ilc{R_PatF} of type \ilc{ocfg -> Pattern S -> f S -> Prop}. We say that \ilc{MatchAll} is correct for that specification if we have:
-\[
-  \ilc{forall (G: ocfg) (pat: Pattern S) (X:f S), X IN MatchAll (PatF pat) G IFF R_PatF G pat X}
-\]
+\begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+forall (G: ocfg) (pat: Pattern S) (X:f S), X ∈ MatchAll (PatF pat) G IFF R_PatF G pat X
+\end{lstlisting}
 
-Similarly, a specification for a closed pattern \ilc{pat: Pattern S} is \ilc{R_pat: ocfg -> S -> Prop}. \ilc{MatchAll} is correct for it if: \ilc{forall (G:ocfg) (X:S), X IN MatchAll pat G IFF R_pat G X}. 
+Similarly, a specification for a closed pattern \ilc{pat: Pattern S} is \ilc{R_pat: ocfg -> S -> Prop}. \ilc{MatchAll} is correct for it if: \ilc{forall (G:ocfg) (X:S), X ∈ MatchAll pat G IFF R_pat G X}. 
 
 \gr{Let us start with} the correction for \ilc{Graph}: \ilc{forall G G', G' ∈ (MatchAll Graph G) IFF G' = G.} Its proof is immediate by definition of \ilc{MatchAll Graph}.
 
-The correction for \ilc{fun P f -> When P f} is given by the following theorem:\\\ilc{forall (P: Pattern S) f X G, X ∈ (MatchAll (When P f) G) IFF f X = true \/\\ X ∈ (MatchAll P G).} We can also give a theorem for the correctness of \ilc{Map}. Proving their correctness is then immediate using builtin lemmas on \ilc{filter} and \ilc{map}.
+The correction for \ilc{fun P f -> When P f} is given by the following theorem:
+\begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+  forall (P: Pattern S) f X G, X ∈ (MatchAll (When P f) G) IFF f X = true \/ X ∈ (MatchAll P G).
+\end{lstlisting}
+We can also give a theorem for the correctness of \ilc{Map}. Proving their correctness is then immediate using builtin lemmas on \ilc{filter} and \ilc{map}.
 
 The same proof mechanism is used for \ilc{Focus}, \ilc{Block}, \ilc{Head} and \ilc{Branch}. We will now detail it for \ilc{Head}.
 %
 % \ilc{MatchAll} relies on the \ilc{heads} function to match the \ilc{Head} constructor. The goal of that function is to find all the "heads", i.e. blocks without predecessors, in an OCFG. To do that, it folds a \ilc{heads_aux} function over the map. That function calls the \ilc{predecessors} function on each block, and appends the result to the return list if the block doesn't have predecessors.
 %
-Figure~\ref{fig:sem_head_def} gives a semantic definition for \ilc{Head}. It is composed of two parts: \ilc{heads_aux_sem} which gives semantics for the auxiliary function, which is used to prove its correctness, and \ilc{heads_sem} which gives the actual semantics for \ilc{Head} and is used \gr{manque un bout?}
+Figure~\ref{fig:sem_head_def} gives a semantic definition for \ilc{Head}. It is composed of two parts: \ilc{heads_aux_sem} which gives semantics for the auxiliary function, which is used to prove its correctness, and \ilc{heads_sem} which gives the actual semantics for \ilc{Head} and is used to enunciate the \ilc{Pattern_Head_correct} theorem.
 %
 Finally, as show in Figure~\ref{fig:head_cor} we can prove the semantics for the auxiliary function, the \ilc{heads} function and \ilc{MatchAll Head}. We first prove \ilc{heads_aux_correct} by induction on \ilc{G}, then \ilc{heads_correct} and \ilc{Pattern_Head_correct} follow immediately.
 
 \begin{figure}[h]
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+(* The semantics for heads_aux *)
 Record heads_aux_sem (G0 G G': ocfg) id b := {
   EQ: G' = delete id G0;
   IN: G !! id = Some b;
   PRED: predecessors id G0 = ∅
 }.
 
-Definition heads_sem (G G':ocfg) (id:bid) b := heads_aux_sem G G G' id b.
+(* The semantics for heads and Head *)
+Definition heads_sem (G G':ocfg) (id:block_id) b := heads_aux_sem G G G' id b.
   \end{lstlisting}
-  \caption{The semantic definition for \ilc{Head}}
-  \gr{Rajoute des commentaires}
+  \caption{The specification of \ilc{Head}}
   \label{fig:sem_head_def}
 % \end{figure}
   \vspace{1em}
 % \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+(* heads_aux follows its semantics *)
 Lemma heads_aux_correct:
   forall G G' G0 id b,
   (id, b, G') ∈ (map_fold (heads_aux G0) [] G) IFF heads_aux_sem G0 G G' id b.
 
+(* heads follows its semantics *)
 Lemma heads_correct:
   forall G G' id b,
   (id, b, G') ∈ (heads G) IFF heads_sem G G' id b.
 
+(* MatchAll Head follows the given semantics *)
 Theorem Pattern_Head_correct {S}:
   forall (G: ocfg) (P: Pattern S) id b X,
   (id, b, X) ∈ (MatchAll (Head P) G) IFF
   exists G', heads_sem G G' id b /\ X ∈ (MatchAll P G').
   \end{lstlisting}
   \caption{The correctness statement of \ilc{MatchAll Head}}
-  \gr{Rajoute des commentaires}
   \label{fig:head_cor}
 \end{figure}
 
@@ -447,8 +458,10 @@ Theorem Pattern_Head_correct {S}:
 \yzt{We have introduced in Section~\ref{sec:lang} a pattern for detecting in a graph pairs of blocks that may be fused. In this section, we turn our attention to using this pattern for defining the block fusion optimization itself, and consider its proof of correctness. Rather than establishing an ad-hoc proof, we first establish a more general theorem for justifying a broad class of program transformations, and apply it to the case of block fusion.}
 % \cut{In this section we will informally define an optimization class, show a theorem for proving the correctness of optimizations of that class, and apply this theorem to an implementation of Block Fusion.}
 
-\gr{Tu n'expliques jamais comment la dénotation d'un ocfg marche (fonction qui prend un bid d'entrée, etc). Il faut le faire ici. Attention aussi, ``bid'' n'est pas défini. p.e. dit ``blockid'' partout pour aider le lecteur.}
-Recall from Section~\ref{sec:background} that we write $t \approx_R u$ to express $t$ and $u$ are weakly bisimilar itrees, whose leafs are related by the relation $R$, and $\approx$ when $R=eq$. On the Vellvm side, we write $\llbracket G \rrbracket$ for the denotation of a (possibly open) LLVM IR control flow graph into a function from pairs of block identifiers to itrees. Note that we consider here the first layer of the denotation: effects remains uninterpreted.
+Recall from Section~\ref{sec:background} that we write $t \approx_R u$ to express $t$ and $u$ are weakly bisimilar itrees, whose leafs are related by the relation $R$, and $\approx$ when $R=eq$. On the Vellvm side, we write $\llbracket G \rrbracket$ for the denotation of a (possibly open) LLVM IR control flow graph into a function from pairs of block ids to itrees. Note that we consider here the first layer of the denotation: effects remains uninterpreted.
+
+More specifically, the denotation of a graph $G$ is noted $\llbracket G \rrbracket (from, to)$ where $from$ and $to$ are block ids. $from$ corresponds to the block from which the execution is done, it is used for the denotation of $\phi$-nodes. $to$ corresponds to the block we want to execute. If $to$ is in $G$, $\llbracket G \rrbracket (from, to)$ corresponds to executing $G$ starting from $to$, entering from $from$. Then we either have an infinite (but possibly eventful) computation, or the computation terminates and returns a value, or a jump to a block outside of $G$. If $to$ is not in $G$, $\llbracket G \rrbracket (from, to)$ corresponds to returning the jump $(from, to)$.
+
 In the remaining of this section, we overload the equivalence notations between graphs: $G_1 \approx_R G_2$ should be understood as $\llbracket G_1\rrbracket \approx_R \llbracket G_2\rrbracket$.
 
 \subsection{On subgraph substitution under context}
@@ -475,26 +488,24 @@ The purpose of a pattern is to identify a subgraph of the adequate shape, and op
 }
 
 \yzt{However, this convenient theorem is unusable for our purpose. Let us consider the case of block fusion: we replace two blocs $b_1$ and $b_2$ by a block $b$.
-If we chose as block identifier (bid) for $b$ the same as for $b_2$, then we must reflect on the context the need to enter the subgraph from a different entry point.
-In contrast, if we chose as bid for $b$ the same as for $b_1$, then we must reflect on the context that we exit the subgraph from a different entry point---as block provenance determines the semantics of $\phi$-nodes.}
-\gr{Je dois avouer qu'un petit example de mauvais renommage m'aurait aidé ici}
-\yzt{Hence, we must take some renaming into account, whether at the subgraph's input interface, or its output interface. Both are viable, but we favor the former. First because performing and reasoning about the renaming of terminators (to account for renamed inputs) is marginally simpler than of $\phi$-nodes (to account for renamed outputs). Second because the resulting obligation for the two equivalent subgraphs becomes simpler to spell out: we need to start the denotations from renamed bids, but can therefore establish an exact weak bisimulation.}
+If we chose the block id for $b$ the same as for $b_2$, then we must reflect on the context the need to enter the subgraph from a different entry point.
+In contrast, if we chose the block id for $b$ the same as for $b_1$, then we must reflect on the context that we exit the subgraph from a different entry point---as block provenance determines the semantics of $\phi$-nodes.}
+% \gr{Je dois avouer qu'un petit example de mauvais renommage m'aurait aidé ici}
+\yzt{Hence, we must take some renaming into account, whether at the subgraph's input interface, or its output interface. Both are viable, but we favor the former. First because performing and reasoning about the renaming of terminators (to account for renamed inputs) is marginally simpler than of $\phi$-nodes (to account for renamed outputs). Second because the resulting obligation for the two equivalent subgraphs becomes simpler to spell out: we need to start the denotations from renamed block ids, but can therefore establish an exact weak bisimulation.}
 
-We start by defining the lifting of a renaming function \ilc{SIG} on bids to one on graphs \ilc{ocfg_term_rename SIG} by applying it to each of its blocks's terminators.
+We start by defining the lifting of a renaming function \ilc{SIG} on block ids to one on graphs \ilc{ocfg_term_rename SIG} by applying it to each of its blocks's terminators.
 We define a function \ilc{ocfg_term_rename} which, given a function over ids~ \ilc{SIG} and a graph \ilc{g}, returns \ilc{g} with~ \ilc{SIG} applied to each id in its blocks' terminators.
 We use this renaming function to establish a first contextual lemma: if two graphs $g_2$ and $g_2'$ are equivalent when executed from \ilc{SIG} related entry points, then the same holds true when extending the graphs with an arbitrary context $g_1$, provided it is renamed on the other side. That is:
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-forall (g1 g2 g2' : ocfg) (σ : bid -> bid):
-  forall from to, ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to) ->
-  forall from to, ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, SIG to).
+forall (g1 g2 g2' : ocfg) (σ : block_id -> block_id):
+  forall from to, ⟦g2⟧ (from,to) ≈ ⟦g2'⟧ (from, SIG to) ->
+  forall from to, ⟦g2 ∪ g1⟧ (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧ (from, SIG to).
   \end{lstlisting}
-
-\gr{c'est quoi la notation avec bs ? Explique.}
 
 This second statement remains insufficient to show the soundness of an optimization such as block fusion. Indeed, if we try start executing from the fused block $b_2$, the semantics are obviously different, one executing the code from $b_1$ and not the other.
 
 More generally, we need to constrain the valid entry blocks of the graph. 
-To do so, we introduce a set of bids \ilc{nTO} to restrict the equations to valid input bids by listing the invalid inputs.
+To do so, we introduce a set of block ids \ilc{nTO} to restrict the equations to valid input block ids by listing the invalid inputs.
 With this in hand, we can state the main contextual theorem we establish, displayed on Figure~\ref{fig:ocfg_equiv}.
 The first series of hypotheses are well-formedness conditions expressing that the context ($g_1$) and the subgraphs ($g_2$ and $g_2'$) are disjoint,
 capturing that the invalid entries belongs to the subgraphs,
@@ -512,7 +523,7 @@ Instead, with additional meta-theory from the itrees, we enrich the intermediate
 
 % \begin{figure}
 %   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-% Theorem (g1 g2 g2' : ocfg) (σ : bid -> bid) (nFROM nTO: gset bid):
+% Theorem (g1 g2 g2' : ocfg) (σ : block id -> block id) (nFROM nTO: gset block id):
 %   (forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
 %   forall from to, to ∉ nTO -> from ∉ nFROM -> ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, SIG to).
 %   \end{lstlisting}
@@ -528,7 +539,7 @@ Instead, with additional meta-theory from the itrees, we enrich the intermediate
 
 \begin{figure}
 \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg) (σ : bid -> bid) (nTO: gset bid) :
+Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg) (σ : block_id -> block_id) (nTO: gset block_id) :
     (* Well formedness properties, where ## is disjointness of sets or map domains *)
     inputs g2' ∖ inputs g2 ⊆ nTO -> 
     nTO ⊆ inputs g2 ∪ inputs g2' -> 
@@ -542,11 +553,11 @@ Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg) (σ : bid -> bid) (nTO: gset bid) :
 
     (* The substituted subgraph is equivalent to the original one *)
     (forall from to, to ∉ nTO -> 
-      ⟦g2⟧bs (from,to) ≈ ⟦g2'⟧bs (from, SIG to)) ->
+      ⟦g2⟧ (from,to) ≈ ⟦g2'⟧ (from, SIG to)) ->
 
     (* Then, the graphs are equivalent from any valid initial start *)
     forall from to, to ∉ nTO ->
-      ⟦g2 ∪ g1⟧bs (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧bs (from, σ to).
+      ⟦g2 ∪ g1⟧ (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧ (from, σ to).
   \end{lstlisting}
   \caption{The \ilc{denote_ocfg_equiv} theorem}
   \label{fig:ocfg_equiv}
@@ -564,7 +575,7 @@ Block Fusion is a relevant optimization for us to choose for multiple reasons. F
 
 \begin{figure}[h]
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Definition BlockFusion_f {S}: (bid * blk * (bid * blk * S) -> bool) :=
+Definition BlockFusion_f {S}: (block_id * blk * (block_id * blk * S) -> bool) :=
   fun '(_, A, (idB, B, _)) => is_seq A idB && no_phi B.
 
 Definition BlockFusion {S} (P: Pattern S) := When (Block (Head P)) BlockFusion_f
@@ -583,13 +594,13 @@ In the case of multiple assignments in a single $\phi$-node, the semantic of the
 
 Now that we have finished detailing the \ilc{BlockFusion} pattern, we can define the corresponding optimization. Figure~\ref{fig:fusion} gives the definition of \ilc{fusion}, the function that applies the transformation, and \ilc{SIGfusion}, the corresponding renaming function.
 
-\ilc{SIGfusion idA idB} is the identity on every bid except \ilc{idA}, where it returns \ilc{idB} instead. \ilc{fusion} takes a renaming function $\sigma$ and two blocks \ilc{A} and \ilc{B} as arguments. It returns the block composed of \ilc{A}'s $\phi$-nodes, the code of both blocks in sequence, and the terminator of \ilc{B} on which $\sigma$ is applied.
+\ilc{SIGfusion idA idB} is the identity on every block id except \ilc{idA}, where it returns \ilc{idB} instead. \ilc{fusion} takes a renaming function $\sigma$ and two blocks \ilc{A} and \ilc{B} as arguments. It returns the block composed of \ilc{A}'s $\phi$-nodes, the code of both blocks in sequence, and the terminator of \ilc{B} on which $\sigma$ is applied.
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Definition σfusion idA idB := fun (id: bid) => if decide (id=idA) then idB else id.
+Definition σfusion idA idB := fun (id: block_id) => if decide (id=idA) then idB else id.
 
-Definition fusion (σ: bid -> bid) (A B: blk): blk := {|
+Definition fusion (σ: block_id -> block_id) (A B: blk): blk := {|
   blk_phis       := A.(blk_phis);
   blk_code       := A.(blk_code) ++ B.(blk_code);
   blk_term       := term_rename σ B.(blk_term)
@@ -606,69 +617,106 @@ To prove the correctness of Block Fusion, we want to leverage the theorem \ilc{d
 Lemma fusion_correct {S} G idA A idB B P (X:S):
   let σ := σfusion idA idB in
   (idA, A, (idB, B, X)) ∈ (MatchAll (BlockFusion P) G) ->
-  forall f to : bid, to ∉ {[idB]} ->
-    ⟦ {[idA := A; idB := B]} ⟧bs (f, to) ≈ ⟦ {[idB := fusion σ idA A B]} ⟧bs (f, σ to).
+  forall f to : block_id, to ∉ {[idB]} ->
+    ⟦ {[idA := A; idB := B]} ⟧ (f, to) ≈ ⟦ {[idB := fusion σ idA A B]} ⟧ (f, σ to).
 
 Theorem Denotation_BlockFusion_correct {S} G idA A idB B f to P (X:S):
   let σ := σfusion idA idB in
   let G0 := delete idB (delete idA G) in
   to <> idB ->
   (idA, A, (idB, B, X)) ∈ (MatchAll (BlockFusion P) G) ->
-  ⟦ G ⟧bs (f, to) ≈ ⟦ <[idB:=fusion σ idA A B]> (ocfg_term_rename σ G0) ⟧bs (f, σ to).
+  ⟦ G ⟧ (f, to) ≈ ⟦ <[idB:=fusion σ idA A B]> (ocfg_term_rename σ G0) ⟧ (f, σ to).
       \end{lstlisting}
       \caption{the correctness theorems of Block Fusion}
       \label{fig:fusion_proof}
 \end{figure}
 
 The proof of \ilc{fusion_correct} is done by going through the semantics of the two subgraphs and matching the corresponding parts with each other.
-From there, proving \ilc{Denotation_BlockFusion_correct} is straight-froward as we only need to apply \ilc{denote_ocfg_equiv} with \ilc{nTO := \{[idB]\}} and \ilc{SIG := SIGfusion idA idB}.
-\ilc{fusion_correct} gives us the semantic lemma, and the well formedness properties are trivial to prove.
 
-\section{A voir: Approfondissements}
-\label{sec:appr}
+From there, proving \ilc{Denotation_BlockFusion_correct} is straight-froward as we only need to apply \ilc{denote_ocfg_equiv} with \ilc{nTO := \{[idB]\}} and \ilc{SIG := SIGfusion idA idB}. \ilc{fusion_correct} gives us the semantic lemma, and the well formedness properties are trivial to prove.
 
-\subsection{Loop pattern}
+With this, we have an executable implementation for Block Fusion, and a correctness proof for it, which highlights the required edits to the context for the optimization to be correct.
 
-\xymatrix{
-  \ar[d]&&&\ar[d]\\
-  *+[F]\txt{A}\ar@/^/[d]& & & *+[F]\txt{B}\ar@/^/[d]\\
-  *+[F]\txt{B}\ar@/^/[u] \ar@/_/[dr]\ar[d]& & \Rightarrow & *+[F]\txt{A}\ar@/^/[u] \ar@/_/[dr]\ar[d]\\
-  &*+[F]\txt{*}\ar@/_/[ul]& & & *+[F]\txt{*}\ar@/_/[ul]
-}
+\section{Future Works}
+\label{sec:fut}
 
-\xymatrix{
-  \ar[dd]&&&\ar[d]\\
-  &&&*+[F]\txt{*}\ar[d]\\
-  *+[F]\txt{A}\ar@/_/[dr]\ar[d]&&\Rightarrow&*+[F]\txt{A}\ar@/_/[dr]\ar[d]\\
-  &*+[F]\txt{*}\ar@/_/[ul]&&&*+[F]\txt{*}\ar@/_/[ul]
-}
+The work done during this internship introduces some possible future works.
+% Notably a more efficient matcher implementation, being able to specify other structural properties, and looking at optimizations in Vellvm's higher interpretation levels.
+Notably a more efficient matcher implementation, and being able to specify other structural properties.
 
-\xymatrix{
-  \ar[dd]&&&\ar[d]\\
-  &&&*+[F]\txt{A}\ar@/_/[r]\ar[d]&*+[F]\txt{1}\ar@/_/[l]\\
-  *+[F]\txt{A}\ar@/_/[dr]\ar[d]&*+[F]\txt{2}\ar@/_/[l]&\Rightarrow&*+[F]\txt{A'}\ar@/_/[r]\ar[d]&*+[F]\txt{2}\ar@/_/[l]\\
-  &*+[F]\txt{1}\ar@/_/[u]&&&
-}
+\subsection{Efficient implementation}
 
-\xymatrix{
-  \ar[dd]&&&\ar[d]\\
-  &&&*+[F]\txt{1}\ar[d]\\
-  *+[F]\txt{A}\ar@/_/[dr]\ar[dd]&*+[F]\txt{2}\ar@/_/[l]&\Rightarrow&*+[F]\txt{A}\ar@/_/[dr]\ar[d]&*+[F]\txt{1}\ar@/_/[l]\\
-  &*+[F]\txt{1}\ar@/_/[u]&&*+[F]\txt{2}\ar[d]&*+[F]\txt{2}\ar@/_/[u]\\
-  &&&&&
-}
+The current implementation of the matcher is very inefficient.
 
-\subsection{Other interpretation levels}
+One way to have a more efficient matcher is to have a matcher that only returns a single component that matches, \ilc{MatchOne}. It would have guarantees that, one the one hand, what it returns does match the pattern, and on the other hand, the matcher only return nothing if nothing could have matched. %A naive version would be with a depth-first search.
 
-\subsection{Optim efficace}
+Since \ilc{MatchAll} also has a role of specification, guarantees on \ilc{MatchOne} can be written in relation for \ilc{MatchAll}. For example, the latter guarantee can be written as:
+\begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+forall P G, MatchOne P G = None IFF MatchAll P G = [].
+\end{lstlisting}
+Non-trivial work would have to be done, for example, to go beyond a naive depth-first search along the components.
 
-\section*{Conclusion}
+Another optimization that could be done to the matcher is to have matches more complex than constructor by constructor. For example, being able to ``pass down'' conditions from \ilc{When} constructors into the functions matching the extraction constructors. This would notably allow eliminating the \ilc{Branch} pattern without losing efficiency.
+
+\subsection{Other structural properties}
+
+Another extension of our work would be begin able to identify other structural properties. One that is very relevant for many optimizations is identifying loops.
+
+LLVM's has a specification for loops~\cite{?}. Loops are defined as strongly connected components (1) such that all edges from outside the component point to the same node (2). They also need to be maximal subsets with these properties (3).
+
+However, this definition introduces challenges. Mainly, finding strongly connected components is a challenging by itself. For example, the formal proof of Tarjan's algorithm~\cite{?} by~\citet{chen_et_al:LIPIcs.ITP.2019.13} in Coq is over 700 lines. And adapting it to Vellvm's \ocfg{}s would take significant additional work.
+
+% One example of optimization of loops is Loop Rotation, which is represented graphically in 
+
+% \subsection{Optimizations at other layers of interpretation}
+
+% As said in Section~\ref{sec:background}, our work focused on layer 0 of Vellvm's interpretation stack. However, many optimizations rely on information gathered on higher interpretation layers.
+
+% \section{A voir: Approfondissements}
+% \label{sec:appr}
+
+% \subsection{Loop pattern}
+
+% \xymatrix{
+%   \ar[d]&&&\ar[d]\\
+%   *+[F]\txt{A}\ar@/^/[d]& & & *+[F]\txt{B}\ar@/^/[d]\\
+%   *+[F]\txt{B}\ar@/^/[u] \ar@/_/[dr]\ar[d]& & \Rightarrow & *+[F]\txt{A}\ar@/^/[u] \ar@/_/[dr]\ar[d]\\
+%   &*+[F]\txt{*}\ar@/_/[ul]& & & *+[F]\txt{*}\ar@/_/[ul]
+% }
+
+% \xymatrix{
+%   \ar[dd]&&&\ar[d]\\
+%   &&&*+[F]\txt{*}\ar[d]\\
+%   *+[F]\txt{A}\ar@/_/[dr]\ar[d]&&\Rightarrow&*+[F]\txt{A}\ar@/_/[dr]\ar[d]\\
+%   &*+[F]\txt{*}\ar@/_/[ul]&&&*+[F]\txt{*}\ar@/_/[ul]
+% }
+
+% \xymatrix{
+%   \ar[dd]&&&\ar[d]\\
+%   &&&*+[F]\txt{A}\ar@/_/[r]\ar[d]&*+[F]\txt{1}\ar@/_/[l]\\
+%   *+[F]\txt{A}\ar@/_/[dr]\ar[d]&*+[F]\txt{2}\ar@/_/[l]&\Rightarrow&*+[F]\txt{A'}\ar@/_/[r]\ar[d]&*+[F]\txt{2}\ar@/_/[l]\\
+%   &*+[F]\txt{1}\ar@/_/[u]&&&
+% }
+
+% \xymatrix{
+%   \ar[dd]&&&\ar[d]\\
+%   &&&*+[F]\txt{1}\ar[d]\\
+%   *+[F]\txt{A}\ar@/_/[dr]\ar[dd]&*+[F]\txt{2}\ar@/_/[l]&\Rightarrow&*+[F]\txt{A}\ar@/_/[dr]\ar[d]&*+[F]\txt{1}\ar@/_/[l]\\
+%   &*+[F]\txt{1}\ar@/_/[u]&&*+[F]\txt{2}\ar[d]&*+[F]\txt{2}\ar@/_/[u]\\
+%   &&&&&
+% }
+
+% \subsection{Other interpretation levels}
+
+% \subsection{Optim efficace}
+
+\section{Conclusion}
 \label{sec:ccl}
 
 During this internship, I designed \pat, a DSL of patterns over graphs to express structural properties. I implemented a matcher to compute the set of decompositions that match a given pattern and proved that it follows the specification of \pat.
 I then wrote an implementation of the Block Fusion optimization based on \pat, and proved it preserves the semantics of the graph. And, to establish this proof, I proved a generic substitution theorem and established a pattern whose specification captures a subgraph with a structure matching the requirements for the optimization.
 
-The Coq implementation for everything done during the internship is available at \url{https://github.com/lfrenot/vellvm/tree/gmap-minimal}.
+The Coq implementation established during the internship is available at \url{https://github.com/lfrenot/vellvm/tree/gmap-minimal}.
 
 \printbibliography
 
