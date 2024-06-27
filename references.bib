@@ -1,21 +1,4 @@
-@article{?,
-author = {Probert, R. L.},
-title = {Optimal Insertion of Software Probes in Well-Delimited Programs},
-year = {1982},
-issue_date = {January 1982},
-publisher = {IEEE Press},
-volume = {8},
-number = {1},
-issn = {0098-5589},
-url = {https://doi.org/10.1109/TSE.1982.234772},
-doi = {10.1109/TSE.1982.234772},
-journal = {IEEE Trans. Softw. Eng.},
-month = {jan},
-pages = {34–42},
-numpages = {9},
-}
-
-@InProceedings{chen_et_al:LIPIcs.ITP.2019.13,
+@InProceedings{FormalTrajan,
   author =	{Chen, Ran and Cohen, Cyril and L\'{e}vy, Jean-Jacques and Merz, Stephan and Th\'{e}ry, Laurent},
   title =	{{Formal Proofs of Tarjan’s Strongly Connected Components Algorithm in Why3, Coq and Isabelle}},
   booktitle =	{10th International Conference on Interactive Theorem Proving (ITP 2019)},
@@ -32,4 +15,111 @@ numpages = {9},
   URN =		{urn:nbn:de:0030-drops-110683},
   doi =		{10.4230/LIPIcs.ITP.2019.13},
   annote =	{Keywords: Mathematical logic, Formal proof, Graph algorithm, Program verification}
+}
+
+@article{CompCert,
+author = {Leroy, Xavier},
+title = {Formal verification of a realistic compiler},
+year = {2009},
+issue_date = {July 2009},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {52},
+number = {7},
+issn = {0001-0782},
+url = {https://doi.org/10.1145/1538788.1538814},
+doi = {10.1145/1538788.1538814},
+abstract = {This paper reports on the development and formal verification (proof of semantic preservation) of CompCert, a compiler from Clight (a large subset of the C programming language) to PowerPC assembly code, using the Coq proof assistant both for programming the compiler and for proving its correctness. Such a verified compiler is useful in the context of critical software and its formal verification: the verification of the compiler guarantees that the safety properties proved on the source code hold for the executable compiled code as well.},
+journal = {Commun. ACM},
+month = {jul},
+pages = {107–115},
+numpages = {9}
+}
+
+@article{Vellvm,
+  author       = {Yannick Zakowski and
+                  Calvin Beck and
+                  Irene Yoon and
+                  Ilia Zaichuk and
+                  Vadim Zaliva and
+                  Steve Zdancewic},
+  title        = {Modular, compositional, and executable formal semantics for {LLVM}
+                  {IR}},
+  journal      = {Proc. {ACM} Program. Lang.},
+  volume       = {5},
+  number       = {{ICFP}},
+  pages        = {1--30},
+  year         = {2021},
+  url          = {https://doi.org/10.1145/3473572},
+  doi          = {10.1145/3473572},
+  timestamp    = {Sat, 08 Jan 2022 02:21:39 +0100},
+  biburl       = {https://dblp.org/rec/journals/pacmpl/ZakowskiBYZZZ21.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+
+@article{ITrees,
+  author       = {Li{-}yao Xia and
+                  Yannick Zakowski and
+                  Paul He and
+                  Chung{-}Kil Hur and
+                  Gregory Malecha and
+                  Benjamin C. Pierce and
+                  Steve Zdancewic},
+  title        = {Interaction trees: representing recursive and impure programs in Coq},
+  journal      = {Proc. {ACM} Program. Lang.},
+  volume       = {4},
+  number       = {{POPL}},
+  pages        = {51:1--51:32},
+  year         = {2020},
+  url          = {https://doi.org/10.1145/3371119},
+  doi          = {10.1145/3371119},
+  timestamp    = {Sun, 12 Nov 2023 02:17:41 +0100},
+  biburl       = {https://dblp.org/rec/journals/pacmpl/XiaZHHMPZ20.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+
+@phdthesis{Helix,
+  title  = {{HELIX}: From Math to Verified Code},
+  author = {Zaliva, Vadim},
+  year   = {2020},
+  school = {Carnegie Mellon University}
+}
+
+@INPROCEEDINGS{Tarjan,
+  author={Tarjan, Robert},
+  booktitle={12th Annual Symposium on Switching and Automata Theory (swat 1971)}, 
+  title={Depth-first search and linear graph algorithms}, 
+  year={1971},
+  volume={},
+  number={},
+  pages={114-121},
+  keywords={Tree graphs;Computer science;Tail;Chemistry;Electrical engineering;Sociology;Information retrieval;TV;Erbium},
+  doi={10.1109/SWAT.1971.10}}
+
+@unpublished{Bastien,
+  author = {Bastien Rousseau},
+  url   = {https://bastienrousseau.github.io/resources/report_cflang.pdf},
+  title  = {A DSL of Combinators for Vellvm},
+  year   = {2021}
+}
+
+@misc{GCC,
+  author       = {Víctor Rodríguez},
+  title        = {Cutting Edge Toolchain (Latest Features in GCC/GLIBC)},
+  year         = {2019},
+  url = {https://static.sched.com/hosted_files/ossna19/db/ELC-2019-compressed.pdf}
+}
+
+@inproceedings{LLVM,
+author = {Lattner, Chris and Adve, Vikram},
+title = {LLVM: A Compilation Framework for Lifelong Program Analysis \& Transformation},
+year = {2004},
+isbn = {0769521029},
+publisher = {IEEE Computer Society},
+address = {USA},
+abstract = {This paper describes LLVM (Low Level Virtual Machine),a compiler framework designed to support transparent, lifelongprogram analysis and transformation for arbitrary programs,by providing high-level information to compilertransformations at compile-time, link-time, run-time, and inidle time between runs.LLVM defines a common, low-levelcode representation in Static Single Assignment (SSA) form,with several novel features: a simple, language-independenttype-system that exposes the primitives commonly used toimplement high-level language features; an instruction fortyped address arithmetic; and a simple mechanism that canbe used to implement the exception handling features ofhigh-level languages (and setjmp/longjmp in C) uniformlyand efficiently.The LLVM compiler framework and coderepresentation together provide a combination of key capabilitiesthat are important for practical, lifelong analysis andtransformation of programs.To our knowledge, no existingcompilation approach provides all these capabilities.We describethe design of the LLVM representation and compilerframework, and evaluate the design in three ways: (a) thesize and effectiveness of the representation, including thetype information it provides; (b) compiler performance forseveral interprocedural problems; and (c) illustrative examplesof the benefits LLVM provides for several challengingcompiler problems.},
+booktitle = {Proceedings of the International Symposium on Code Generation and Optimization: Feedback-Directed and Runtime Optimization},
+pages = {75},
+location = {Palo Alto, California},
+series = {CGO '04}
 }

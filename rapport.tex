@@ -109,34 +109,14 @@
 \indent
 For my M2 year at ENS de Lyon, I completed a 20 weeks internship in the LIP Computer Science laboratory in ENS Lyon. This internship was supervised by Yannick Zakowski and Gabriel Radanne in the Compilation and Analysis, Software and Hardware Team of the LIP. The goal of this internship was to design and implement a pattern language over control flow graphs to provide a framework for formal proofs on optimizations.
 
-% Compilation
-
-% Compilation Vérifiée, i.e., préservation de la sémantique
-
-% Dans un assistant de preuve, Coq en l'occurence.
-
-% Des compilateurs vérifiées, y en a qui exisent. en particulier vellvm, donc laius llvm ir.
-
-% fondements sémantiques de vellvm === interpréteurs monadiques
-% raisonnement == bisimilarity
-
-% expérience avec vellvm === helix === un gros bazar avec les noms, et la génération de noms frais, etc\dots
-
-% Appelle à des abstractions pour programmer et raisonner sur des passes de génération et de transformation de graphes.
-
-% Expériences précédentes se sont penchés sur la conception de combinateurs pour construire des graphes, ce qui est pertinent pour un front end.
-
-% Ici, on s'intéresse à un problème complémentaire : lors de l'écriture de passes d'optimizations, il nous faut identifier un sous-graphe satisfaisant des propriétés structurelles particulières, y opérer une transformation, et réintégrer le sous-graphe transformé dans son contexte.
-
-% Contributions.
 \paragraph{}
-Compilers are extremely complex objects, gcc's~\cite{?} source code is made of about 15 million lines of code. Because of that complexity, it can be hard to assert that compilers follow their specification. For instance, code compiled for aeronautics is usually done without optimizations to reduce the likelihood of unintended behaviors~\cite{?}.
+Compilers are extremely complex objects, gcc's source code is made of about 15 million lines of code~\cite{GCC}. Because of that complexity, it can be hard to assert that compilers follow their specification. For instance, code compiled for aeronautics is usually done without optimizations to reduce the likelihood of unintended behaviors.
 
-One possible solution to this dilemma is \emph{verified compilation}. That is, compilers that are proven to preserve the semantics of the source code. Proving this implies defining formal definitions for the semantics of the source language, the target language and proving the preservation of behavior between them. Verified compilers usually rely on proof assistants like Coq~\cite{?}, which allow writing executable code, i.e.\ the compiler, and formal proofs on that code.
+One possible solution to this dilemma is \emph{verified compilation}. That is, compilers that are proven to preserve the semantics of the source code. Proving this implies defining formal definitions for the semantics of the source language, the target language and proving the preservation of behavior between them. Verified compilers usually rely on proof assistants like Coq~\footnote{\url{https://coq.inria.fr/}}, which allow writing executable code, i.e.\ the compiler, and formal proofs on that code.
 
-Verified compilers have been a research subject for some time now, notably since the CompCert project~\cite{?}, which established a verified compiler for the ISO C 99 language. It is commercialized by AbsInt~\cite{?}, for example for nuclear and aeronautics industries. Our work takes place in the context of the Vellvm project~\cite{?}, which aims at formalizing the semantics of LLVM IR\@. LLVM IR is an intermediate representation used as a front-end and back-end for many languages and architectures. It is based on a Control-Flow Graph (CFG) model, with named blocs and abstract registers.
+Verified compilers have been a research subject for some time now, notably since the CompCert project~\cite{CompCert}, which established a verified compiler for the ISO C 99 language. It is commercialized by AbsInt~\footnote{\url{https://www.absint.com/}}, for industries like nuclear and aeronautics. Our work takes place in the context of the Vellvm project~\cite{Vellvm}, which aims at formalizing the semantics of LLVM IR\@. LLVM IR is an intermediate representation used as a front-end and back-end for many languages and architectures. It is based on a Control-Flow Graph (CFG) model, with named blocs and abstract registers.
 
-Vellvm has had some applications, notably to prove some IR to IR optimizations~\cite{?}, as well as to establish a verified front-end from Helix to LLVM IR~\cite{?}. One key challenge that was identified from establishing that front-end was fresh identifier generation. This is a reoccurring issue with formal proofs on named systems~\cite{?}. This observation calls for better abstraction for reasoning on graphs. Previous experiments aimed at designing combinators to ease the construction of graphs capturing high-level control flow abstractions, a solution suitable to write front-ends.
+Vellvm has had some applications, notably to prove some IR to IR optimizations~\cite{Vellvm}, as well as to establish a verified front-end from Helix to LLVM IR~\cite{Helix}. One key challenge that was identified from establishing that front-end was fresh identifier generation. This is a reoccurring issue with formal proofs on named systems~\cite{Bastien}. This observation calls for better abstraction for reasoning on graphs. Previous experiments aimed at designing combinators to ease the construction of graphs capturing high-level control flow abstractions, a solution suitable to write front-ends.
 
 \paragraph{}
 My work focused on a orthogonal notion. When writing optimization passes, there is often a need to identify a subgraph with specific structural properties, apply a transformation on it, and link the transformed subgraph back with the context.
@@ -157,15 +137,15 @@ In the remaining of this report, Section~\ref{sec:background} introduces the nec
 The goal of the Vellvm project is to \emph{formally define} the semantic of the LLVM IR and build verified
 components based on that formalization.
 %
-LLVM~\cite{} is a compiler infrastructure designed around a language-independent \emph{intermediate representation} (IR). It is used to develop frontends for programming languages and backends for instruction set architectures.
+LLVM~\cite{LLVM} is a compiler infrastructure designed around a language-independent \emph{intermediate representation} (IR). It is used to develop frontends for programming languages and backends for instruction set architectures.
 
-The LLVM IR is an instruction set similar to low-level assembly languages like RISC, but features high-level informations. This duality allows it to represent any program while still permitting analysis and optimizations. It is based on control flow-graphs, with named labels and registers, and guarantees Single Static Assignment (SSA) form~\cite{}, which is key to many static analyses and optimizations. The LLVM IR is statically typed, and features integer-pointer casts.
+The LLVM IR is an instruction set similar to low-level assembly languages like RISC, but features high-level informations. This duality allows it to represent any program while still permitting analysis and optimizations. It is based on control flow-graphs, with named labels and registers, and guarantees Single Static Assignment (SSA) form, which is key to many static analyses and optimizations. The LLVM IR is statically typed, and features integer-pointer casts.
 %
 Optimizations and analysis on the LLVM IR are done through successive \emph{analysis and transformation passes}.
 
 \subsection{Interaction Trees}
 
-The core of Vellvm's formalization relies on Interaction Trees (ITrees).
+The core of Vellvm's formalization relies on Interaction Trees~\cite{ITrees} (ITrees).
 
 ITrees are a data structure designed to represent the dynamic behaviors of a computation. Itrees are a coinductive structure, meaning they represent potentially infinite trees. This allows ITrees to model recursive and effectful programs, including divergent computations.
 
@@ -182,7 +162,7 @@ CoInductive itree (E : Type -> Type) (R : Type) : Type :=
   \label{fig:itree}
 \end{figure}
 
-\citet{?} provide concrete examples of ITrees. For example, we can define an effect type \ilc{IO}, corresponding to simple inputs and outputs over integers. With \ilc{IO}, we can establish an ITree \ilc{echo} which loops forever, echoing each input received to the output:
+\citet{ITrees} provide concrete examples of ITrees. For example, we can define an effect type \ilc{IO}, corresponding to simple inputs and outputs over integers. With \ilc{IO}, we can establish an ITree \ilc{echo} which loops forever, echoing each input received to the output:
 \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Inductive IO : Type -> Type :=
   | Input : IO nat
@@ -203,16 +183,22 @@ Unlike similar projects, which rely on \emph{operational semantics} and simulati
 
 \subsection{Vellvm's semantics}
 
-
-Vellvm introduces Verified LLVM IR (VIR), a \emph{realistic subset} of the LLVM IR. Figure~\ref{vir} shows a subset of VIR's syntax.
+Vellvm introduces Verified LLVM IR (VIR), a \emph{realistic subset} of the LLVM IR.
+% Figure~\ref{vir} shows a subset of VIR's syntax.
 
 Each element of VIR's syntax is represented by a corresponding ITree. Each effect (except control flow) is captured by a \ilc{Vis} event, which can be interpreted later. This semantic includes many non-trivial features of LLVM IR, including pointers, LLVM's $\phi$-nodes and undefined behaviors.
 
 Since the semantics of a block or set of blocks can be defined without relying on a ``complete'' CFG, it is possible to use ``open control-flow graphs'' (\ocfg), which is simply a set of blocks without a defined entry point.
 
-To interpret the semantics of the different effects of its syntax, Vellvm uses a stack of interpreters. It gradually introduces external elements to the semantic (intrinsics, global and local environments, \ldots). Figure~\ref{interp} show that stack of interpretation. The final levels split between a \emph{propositional} model, which interprets the non-determinism of LLVM IR's undefined behaviors, and an \emph{executable} model, which implements one of these behaviors.
+To interpret the semantics of the different effects of its syntax, Vellvm uses a stack of interpreters. It gradually introduces external elements to the semantic (intrinsics, global and local environments, \ldots). Figure~\ref{fig:interp} show that stack of interpretation. The final levels split between a \emph{propositional} model, which interprets the non-determinism of LLVM IR's undefined behaviors, and an \emph{executable} model, which implements one of these behaviors.
 
-Since this internship mainly focused on structural properties, we will only interact with layer 0. That is, with control flow as the only interpreted events.
+Since this internship mainly focused on structural properties, we will only interact with level 0. That is, with control flow as the only interpreted events.
+
+\begin{figure}
+  \includegraphics[width=\textwidth]{images/interp-figure.pdf}
+  \caption{Vellvm's levels of interpretation}
+  \label{fig:interp}
+\end{figure}
 
 \section{The pattern language}
 \label{sec:lang}
@@ -458,7 +444,7 @@ Theorem Pattern_Head_correct {S}:
 \yzt{We have introduced in Section~\ref{sec:lang} a pattern for detecting in a graph pairs of blocks that may be fused. In this section, we turn our attention to using this pattern for defining the block fusion optimization itself, and consider its proof of correctness. Rather than establishing an ad-hoc proof, we first establish a more general theorem for justifying a broad class of program transformations, and apply it to the case of block fusion.}
 % \cut{In this section we will informally define an optimization class, show a theorem for proving the correctness of optimizations of that class, and apply this theorem to an implementation of Block Fusion.}
 
-Recall from Section~\ref{sec:background} that we write $t \approx_R u$ to express $t$ and $u$ are weakly bisimilar itrees, whose leafs are related by the relation $R$, and $\approx$ when $R=eq$. On the Vellvm side, we write $\llbracket G \rrbracket$ for the denotation of a (possibly open) LLVM IR control flow graph into a function from pairs of block ids to itrees. Note that we consider here the first layer of the denotation: effects remains uninterpreted.
+Recall from Section~\ref{sec:background} that we write $t \approx_R u$ to express $t$ and $u$ are weakly bisimilar itrees, whose leafs are related by the relation $R$, and $\approx$ when $R=eq$. On the Vellvm side, we write $\llbracket G \rrbracket$ for the denotation of a (possibly open) LLVM IR control flow graph into a function from pairs of block ids to itrees. Note that we consider here the first level of the denotation: effects remains uninterpreted.
 
 More specifically, the denotation of a graph $G$ is noted $\llbracket G \rrbracket (from, to)$ where $from$ and $to$ are block ids. $from$ corresponds to the block from which the execution is done, it is used for the denotation of $\phi$-nodes. $to$ corresponds to the block we want to execute. If $to$ is in $G$, $\llbracket G \rrbracket (from, to)$ corresponds to executing $G$ starting from $to$, entering from $from$. Then we either have an infinite (but possibly eventful) computation, or the computation terminates and returns a value, or a jump to a block outside of $G$. If $to$ is not in $G$, $\llbracket G \rrbracket (from, to)$ corresponds to returning the jump $(from, to)$.
 
@@ -662,9 +648,9 @@ Another optimization that could be done to the matcher is to have matches more c
 
 Another extension of our work would be begin able to identify other structural properties. One that is very relevant for many optimizations is identifying loops.
 
-LLVM's has a specification for loops~\cite{?}. Loops are defined as strongly connected components (1) such that all edges from outside the component point to the same node (2). They also need to be maximal subsets with these properties (3).
+LLVM's has a specification for loops~\footnote{\url{https://llvm.org/docs/LoopTerminology.html}}. Loops are defined as strongly connected components (1) such that all edges from outside the component point to the same node (2). They also need to be maximal subsets with these properties (3).
 
-However, this definition introduces challenges. Mainly, finding strongly connected components is a challenging by itself. For example, the formal proof of Tarjan's algorithm~\cite{?} by~\citet{chen_et_al:LIPIcs.ITP.2019.13} in Coq is over 700 lines. And adapting it to Vellvm's \ocfg{}s would take significant additional work.
+However, this definition introduces challenges. Mainly, finding strongly connected components is a challenging by itself. For example, the formal proof of Tarjan's algorithm~\cite{Tarjan} by~\citet{FormalTrajan} in Coq is over 700 lines. And adapting it to Vellvm's \ocfg{}s would take significant additional work.
 
 % One example of optimization of loops is Loop Rotation, which is represented graphically in 
 
