@@ -203,7 +203,7 @@ Since this internship mainly focused on structural properties, we will only inte
 
 % \yz{Il peut être pratique d'avoir un nom pour ton langage pour pouvoir y référer.}
 
-\yzt{We now turn our attention to the central piece of our contribution: the design of \pat{}, a DSL of patterns for writing and proving correct program transformations. This DSL is composed of two core components. First, an indexed datatype provides a syntax for the user to specify how they wish to decompose an input \ocfg. Second, a \emph{matcher} provides a semantics to the language, specifying the valid decompositions associated to each pattern. Finally, we illustrate on an example the definition and semantic characterization of a pattern extracting the heads of a graph, written in our DSL.}
+% \yzt{We now turn our attention to the central piece of our contribution: the design of \pat{}, a DSL of patterns for writing and proving correct program transformations. This DSL is composed of two core components. First, an indexed datatype provides a syntax for the user to specify how they wish to decompose an input \ocfg. Second, a \emph{matcher} provides a semantics to the language, specifying the valid decompositions associated to each pattern. Finally, we illustrate on an example the definition and semantic characterization of a pattern extracting the heads of a graph, written in our DSL.}
 
 In this section we will focus on our main contribution: the design of \pat{}, a DSL of patterns for writing and proving correct program transformations. This DSL is composed of two core components. The first is a datatype, \ilc{Pattern}, which provides a syntax for the user to specify how they wish to decompose an input \ocfg. The second is a \emph{matcher} function, which provides semantics to apply the language to an \ocfg{}, specifying the valid decompositions associated to each pattern. Finally, we illustrate on an example the definition and semantic characterization of a pattern extracting the heads of a graph, written in our DSL\@.
 
@@ -217,8 +217,7 @@ In this section we will focus on our main contribution: the design of \pat{}, a 
 
 \subsection{\pat: a DSL for pattern matching on graphs}
 
-\yzt{At a high level, we look for a language allowing the user to characterize and reason about optimizable subgraphs in an \ocfg. 
-To this end, we introduce \pat, a general, very expressive DSL for pattern matching on graphs. The specific patterns we are interested in from the perspective of compilation will then be expressed in \pat.}
+At a high level, we want a language allowing the user to characterize and reason about optimizable subgraphs in an \ocfg. To this end, we introduce \pat, a general, very expressive DSL for pattern matching on graphs. The specific patterns we are interested in from the perspective of compilation will then be able to be expressed in \pat.
 
 \begin{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
@@ -368,8 +367,7 @@ Definition branches (G: ocfg): list (block_id*blk*ocfg) := map_fold (branches_au
 
 \subsection{Specification}
 
-\yzt{We have claimed that \ilc{MatchAll} \emph{returns all valid decompositions}. We capture this statement by providing specifications for each constructor of \pat, and proving they are exactly captures by \ilc{MatchAll}.}
-\gr{For this purpose, we will give a generic specification for \emph{opened patterns}, i.e. patterns parameterized by a sub-pattern.}
+We have claimed that \ilc{MatchAll} \emph{returns all valid decompositions}. To capture this statement, we have provided specifications for each constructor of \pat, and proved they are exactly what is captured by \ilc{MatchAll}. For this purpose, we will give a generic specification for \emph{opened patterns}, i.e.\ patterns parameterized by a sub-pattern.
 
 A specification for an opened pattern \ilc{PatF} of type \ilc{Pattern S -> Pattern (f S)} is a function \ilc{R_PatF} of type \ilc{ocfg -> Pattern S -> f S -> Prop}. We say that \ilc{MatchAll} is correct for that specification if we have:
 \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
@@ -378,7 +376,7 @@ forall (G: ocfg) (pat: Pattern S) (X:f S), X ∈ MatchAll (PatF pat) G IFF R_Pat
 
 Similarly, a specification for a closed pattern \ilc{pat: Pattern S} is \ilc{R_pat: ocfg -> S -> Prop}. \ilc{MatchAll} is correct for it if: \ilc{forall (G:ocfg) (X:S), X ∈ MatchAll pat G IFF R_pat G X}. 
 
-\gr{Let us start with} the correction for \ilc{Graph}: \ilc{forall G G', G' ∈ (MatchAll Graph G) IFF G' = G.} Its proof is immediate by definition of \ilc{MatchAll Graph}.
+Let us start with the correction for \ilc{Graph}: \ilc{forall G G', G' ∈ (MatchAll Graph G) IFF G' = G.} Its proof is immediate by definition of \ilc{MatchAll Graph}.
 
 The correction for \ilc{fun P f -> When P f} is given by the following theorem:
 \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
@@ -435,8 +433,7 @@ Theorem Pattern_Head_correct {S}:
 \section{Formal verification of an optimization pass: the case of block fusion}
 \label{sec:deno}
 
-\yzt{We have introduced in Section~\ref{sec:lang} a pattern for detecting in a graph pairs of blocks that may be fused. In this section, we turn our attention to using this pattern for defining the block fusion optimization itself, and consider its proof of correctness. Rather than establishing an ad-hoc proof, we first establish a more general theorem for justifying a broad class of program transformations, and apply it to the case of block fusion.}
-% \cut{In this section we will informally define an optimization class, show a theorem for proving the correctness of optimizations of that class, and apply this theorem to an implementation of Block Fusion.}
+In Section~\ref{sec:lang}, we have introduced a pattern for detecting in a graph pairs of blocks that may be fused. In this section, we turn our attention to using this pattern for defining the Block Fusion optimization itself, and establish its proof of correctness. Rather than doing an ad-hoc proof, we first establish a more general theorem for justifying a broad class of program transformations, and apply it to the case of block fusion.
 
 Recall from Section~\ref{sec:background} that we write $t \approx_R u$ to express $t$ and $u$ are weakly bisimilar itrees, whose leafs are related by the relation $R$, and $\approx$ when $R=eq$. On the Vellvm side, we write $\llbracket G \rrbracket$ for the denotation of a (possibly open) LLVM IR control flow graph into a function from pairs of block ids to itrees. Note that we consider here the first level of the denotation: effects remains uninterpreted.
 
@@ -460,18 +457,18 @@ The purpose of a pattern is to identify a subgraph of the adequate shape, and op
 %   \end{lstlisting}
 % \end{figure}
 
-\yzt{Weak bisimilarity of interaction trees are proven to respect all relevant contexts in Vellvm. One could therefore simply consider the substitution of equivalent subgraphs $G_2$ and $G_2'$ in a larger context $G$, where graphs are equivalent if their denotations are bisimilar. Represented graphically:}
+Weak bisimilarity of interaction trees are proven to respect all relevant contexts in Vellvm. One could therefore simply consider the substitution of equivalent subgraphs $G_2$ and $G_2'$ in a larger context $G$, where graphs are equivalent if their denotations are bisimilar. Represented graphically, that means having:
 \xymatrix{
   &&&&&&&&\\
   G_2&\approx&G_2'&\implies&*+[F]{G_2}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]&\approx&*+[F]{G_2'}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G}\ar@{-->}`u[ul] `[l] [l]\\
   &&&&&&&&
 }
 
-\yzt{However, this convenient theorem is unusable for our purpose. Let us consider the case of block fusion: we replace two blocs $b_1$ and $b_2$ by a block $b$.
+However, this simple theorem is unusable for our purpose. Let us consider the case of block fusion: we replace two blocs $b_1$ and $b_2$ by a block $b$.
 If we chose the block id for $b$ the same as for $b_2$, then we must reflect on the context the need to enter the subgraph from a different entry point.
-In contrast, if we chose the block id for $b$ the same as for $b_1$, then we must reflect on the context that we exit the subgraph from a different entry point---as block provenance determines the semantics of $\phi$-nodes.}
-% \gr{Je dois avouer qu'un petit example de mauvais renommage m'aurait aidé ici}
-\yzt{Hence, we must take some renaming into account, whether at the subgraph's input interface, or its output interface. Both are viable, but we favor the former. First because performing and reasoning about the renaming of terminators (to account for renamed inputs) is marginally simpler than of $\phi$-nodes (to account for renamed outputs). Second because the resulting obligation for the two equivalent subgraphs becomes simpler to spell out: we need to start the denotations from renamed block ids, but can therefore establish an exact weak bisimulation.}
+In contrast, if we chose the block id for $b$ the same as for $b_1$, then we must reflect on the context that we exit the subgraph from a different entry point---as block provenance determines the semantics of $\phi$-nodes.
+
+Hence, we must take some renaming into account, whether at the subgraph's input interface, or its output interface. Both are viable, but we favor the former. First because performing and reasoning about the renaming of terminators (to account for renamed inputs) is marginally simpler than of $\phi$-nodes (to account for renamed outputs). Second because the resulting obligation for the two equivalent subgraphs becomes simpler to spell out: we need to start the denotations from renamed block ids, but can therefore establish an exact weak bisimulation.
 
 We start by defining the lifting of a renaming function \ilc{SIG} on block ids to one on graphs \ilc{ocfg_term_rename SIG} by applying it to each of its blocks's terminators.
 We define a function \ilc{ocfg_term_rename} which, given a function over ids~ \ilc{SIG} and a graph \ilc{g}, returns \ilc{g} with~ \ilc{SIG} applied to each id in its blocks' terminators.
