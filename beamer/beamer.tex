@@ -1,0 +1,196 @@
+\documentclass{beamer}
+
+\usepackage[style=numeric, natbib]{biblatex}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{soul}
+% \usepackage[margin=20ex]{geometry}
+% \usepackage{amsmath}
+% \usepackage{array}
+% \usepackage{booktabs}
+% \usepackage{caption}
+% \usepackage{fancyvrb}
+% \usepackage{graphicx}
+% \usepackage{hypdoc}
+% \usepackage{libertine}
+% \usepackage{longtable}
+% \usepackage{newtxmath}
+% \usepackage{tabularx}
+% \usepackage{zi4}
+% \usepackage{graphicx}
+% \usepackage{colortbl}
+% \usepackage{microtype}
+% \usepackage{balance}
+% \usepackage{mathtools}
+% \usepackage{float}
+% \usepackage{color}
+
+\lstset{language=sh,
+        basicstyle=\footnotesize\ttfamily,
+        keywordstyle=\footnotesize\color{blue}\ttfamily,
+        moredelim=**[is][\btHL]{|}{|},
+        escapeinside={<@}{@>}
+}
+
+\usetheme{Antibes}
+\usecolortheme{beaver}
+
+\addbibresource{references.bib}
+
+\title{CFG Patterns: A new tool to formally verify optimizations in Vellvm}
+
+\author[Léon Frenot]{Leon Frenot\\ Supervised by Yannick Zakowski \& Gabriel Radanne}
+
+\date[July 12th, 2024]{February 5th, 2024 - July 5th, 2024}
+
+% \setbeamertemplate{footline}[frame number]
+\setbeamertemplate{navigation symbols}{}
+
+\makeatletter
+\setbeamertemplate{footline}{
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+      \usebeamerfont{author in head/foot}\insertshortauthor
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+      \usebeamerfont{title in head/foot}\insertshortdate
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+      \insertframenumber{} / \inserttotalframenumber\hspace*{2ex}
+    \end{beamercolorbox}%
+  }%
+  \vskip0pt%
+}
+\makeatother
+
+\lstdefinestyle{customcoq}{
+  columns=flexible,
+  mathescape=true,
+  belowcaptionskip=1\baselineskip,
+  breaklines=true,
+  xleftmargin=\parindent,
+  language=Coq,
+  morekeywords={Variant, fun, Arguments, Type, cofix},
+  % morekeywords={SOCKAPI,ITREE,data_at,data_at_},
+  emph={%
+    SOCKAPI,ITree,data_at,data_at_
+  },
+  emphstyle={\bfseries\color{green!40!red!80}},
+  showstringspaces=false,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\bfseries\color{green!20!black},
+  commentstyle=\itshape\color{red!40!black},
+  identifierstyle=\color{violet!50!black},
+  stringstyle=\color{orange},
+  escapeinside={<@}{@>}
+}
+\newcommand{\inlinecoq}[1]{\mbox{\lstinline[style=customcoq,columns=fixed,basewidth=.48em]{#1}}}
+\newcommand{\ilc}[1]{\inlinecoq{#1}}
+
+\newcommand{\leon}[1]{\textcolor{blue}{#1}}
+\newcommand{\gr}[1]{\textcolor{Orange}{#1}}
+\newcommand{\yz}[1]{\textcolor{ForestGreen}{#1}}
+\newcommand{\yzt}[1]{\textcolor{ForestGreen!50}{#1}}
+\newcommand{\cut}[1]{\textcolor{Gray!40}{#1}}
+\newcommand{\ocfg}{OCFG\xspace}
+\newcommand{\pat}{\texttt{Pat}\xspace}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section*{Introduction}
+
+\subsection*{Context \& Motivations}
+
+\begin{frame}
+  Context
+  \begin{itemize}
+    \item M2 research internship
+    \item 5 Months in LIP Computer Science laboratory at ENS Lyon.
+    \item Compilation and Analysis, Software and Hardware Team.
+  \end{itemize}
+  Keywords
+  \begin{itemize}
+    \item Verified Compilation
+    \item Verified Code transformations
+    \item DSL of patterns
+  \end{itemize}
+\end{frame}
+
+\subsection*{State of the Art}
+\begin{frame}
+  \leon{TODO}
+\end{frame}
+
+\begin{frame}
+  \frametitle{LLVM and Vellvm}
+  \leon{TODO}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Itrees}
+  \leon{TODO}
+\end{frame}
+
+\subsection*{Goal of the internship}
+
+\begin{frame}
+  \begin{block}{Goal of the internship}
+    \leon{TODO}
+  \end{block}
+\end{frame}
+
+\section{The pattern language}
+
+\begin{frame}
+  \frametitle{Table of Contents}
+  \tableofcontents
+\end{frame}
+
+\begin{frame}
+  \frametitle{Pat}
+  \leon{TODO}
+\end{frame}
+
+\begin{frame}
+  \frametitle{MatchAll}
+  \leon{TODO}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Specification}
+  \leon{TODO}
+\end{frame}
+
+\section{Formal verification of an optimization pass}
+
+\begin{frame}
+  \frametitle{Table of Contents}
+  \tableofcontents[currentsection]
+\end{frame}
+
+\begin{frame}
+  \frametitle{Substitution under context}
+  \leon{TODO}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Block Fusion}
+  \leon{TODO}
+\end{frame}
+
+\section*{Conclusion}
+
+\begin{frame}
+  \frametitle{Conclusion}
+  \leon{TODO}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Thank you for listening.}
+  Any questions?
+\end{frame}
+
+\end{document}

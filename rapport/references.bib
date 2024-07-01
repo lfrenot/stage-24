@@ -1,0 +1,130 @@
+@InProceedings{FormalTrajan,
+  author =	{Chen, Ran and Cohen, Cyril and L\'{e}vy, Jean-Jacques and Merz, Stephan and Th\'{e}ry, Laurent},
+  title =	{{Formal Proofs of Tarjan’s Strongly Connected Components Algorithm in Why3, Coq and Isabelle}},
+  booktitle =	{10th International Conference on Interactive Theorem Proving (ITP 2019)},
+  pages =	{13:1--13:19},
+  series =	{Leibniz International Proceedings in Informatics (LIPIcs)},
+  ISBN =	{978-3-95977-122-1},
+  ISSN =	{1868-8969},
+  year =	{2019},
+  volume =	{141},
+  editor =	{Harrison, John and O'Leary, John and Tolmach, Andrew},
+  publisher =	{Schloss Dagstuhl -- Leibniz-Zentrum f{\"u}r Informatik},
+  address =	{Dagstuhl, Germany},
+  URL =		{https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ITP.2019.13},
+  URN =		{urn:nbn:de:0030-drops-110683},
+  doi =		{10.4230/LIPIcs.ITP.2019.13},
+  annote =	{Keywords: Mathematical logic, Formal proof, Graph algorithm, Program verification}
+}
+
+@article{CompCert,
+author = {Leroy, Xavier},
+title = {Formal verification of a realistic compiler},
+year = {2009},
+issue_date = {July 2009},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {52},
+number = {7},
+issn = {0001-0782},
+url = {https://doi.org/10.1145/1538788.1538814},
+doi = {10.1145/1538788.1538814},
+abstract = {This paper reports on the development and formal verification (proof of semantic preservation) of CompCert, a compiler from Clight (a large subset of the C programming language) to PowerPC assembly code, using the Coq proof assistant both for programming the compiler and for proving its correctness. Such a verified compiler is useful in the context of critical software and its formal verification: the verification of the compiler guarantees that the safety properties proved on the source code hold for the executable compiled code as well.},
+journal = {Commun. ACM},
+month = {jul},
+pages = {107–115},
+numpages = {9}
+}
+
+@article{Vellvm,
+  author       = {Yannick Zakowski and
+                  Calvin Beck and
+                  Irene Yoon and
+                  Ilia Zaichuk and
+                  Vadim Zaliva and
+                  Steve Zdancewic},
+  title        = {Modular, compositional, and executable formal semantics for {LLVM}
+                  {IR}},
+  journal      = {Proc. {ACM} Program. Lang.},
+  volume       = {5},
+  number       = {{ICFP}},
+  pages        = {1--30},
+  year         = {2021},
+  url          = {https://doi.org/10.1145/3473572},
+  doi          = {10.1145/3473572},
+  timestamp    = {Sat, 08 Jan 2022 02:21:39 +0100},
+  biburl       = {https://dblp.org/rec/journals/pacmpl/ZakowskiBYZZZ21.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+
+@article{ITrees,
+  author       = {Li{-}yao Xia and
+                  Yannick Zakowski and
+                  Paul He and
+                  Chung{-}Kil Hur and
+                  Gregory Malecha and
+                  Benjamin C. Pierce and
+                  Steve Zdancewic},
+  title        = {Interaction trees: representing recursive and impure programs in Coq},
+  journal      = {Proc. {ACM} Program. Lang.},
+  volume       = {4},
+  number       = {{POPL}},
+  pages        = {51:1--51:32},
+  year         = {2020},
+  url          = {https://doi.org/10.1145/3371119},
+  doi          = {10.1145/3371119},
+  timestamp    = {Sun, 12 Nov 2023 02:17:41 +0100},
+  biburl       = {https://dblp.org/rec/journals/pacmpl/XiaZHHMPZ20.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+
+@phdthesis{Helix,
+author = {Zaliva, Vadim and Pasareanu, Corina and Jia, Limin and Zdancewic, Steve},
+advisor = {Franz, Franchetti,},
+title = {HELIX: From Math to Verified Code},
+year = {2020},
+isbn = {9798569901869},
+publisher = {Carnegie Mellon University},
+address = {USA},
+abstract = {This thesis presents HELIX, a code generation and formal verification system with a focus on the intersection of high-performance and high-assurance numerical computing. This allowed us to build a system that could be fine-tuned to generate efficient code for a broad set of computer architectures while providing formal guarantees of such generated code's correctness.The method we used for high-performance code synthesis is the algebraic transformation of vector and matrix computations into a data flow optimized for parallel or vectorized processing on target hardware. The abstraction used to formalize and verify this technique is an operator language used with semantics-preserving term-rewriting. We use sparse vector abstraction to represent partial computations, enabling us to use algebraic reasoning to prove parallel decomposition properties.HELIX provides a formal verification foundation for rewriting-based algebraic code synthesis optimizations, driven by an external oracle. Presently HELIX uses SPIRAL as an oracle deriving the rule application order. The SPIRAL system was developed over the years and successfully applied to generate code for various numeric algorithms. Building on its sound algebraic foundation, we generalize and extend it in the direction of non-linear operators, towards a new theory of partial computations, applying formal language theory and formal verification techniques.HELIX is developed and proven in Coq proof assistant and demonstrated on a real-life example of verified high-performance code generation of the dynamic window safety monitor for a cyber-physical robot system.},
+note = {AAI28262508}
+}
+
+@INPROCEEDINGS{Tarjan,
+  author={Tarjan, Robert},
+  booktitle={12th Annual Symposium on Switching and Automata Theory (swat 1971)}, 
+  title={Depth-first search and linear graph algorithms}, 
+  year={1971},
+  volume={},
+  number={},
+  pages={114-121},
+  keywords={Tree graphs;Computer science;Tail;Chemistry;Electrical engineering;Sociology;Information retrieval;TV;Erbium},
+  doi={10.1109/SWAT.1971.10}}
+
+@unpublished{Bastien,
+  author = {Bastien Rousseau},
+  url   = {https://bastienrousseau.github.io/resources/report_cflang.pdf},
+  title  = {A DSL of Combinators for Vellvm},
+  year   = {2021}
+}
+
+@misc{GCC,
+  author       = {Víctor Rodríguez},
+  title        = {Cutting Edge Toolchain (Latest Features in GCC/GLIBC)},
+  year         = {2019},
+  url = {https://static.sched.com/hosted_files/ossna19/db/ELC-2019-compressed.pdf}
+}
+
+@inproceedings{LLVM,
+author = {Lattner, Chris and Adve, Vikram},
+title = {LLVM: A Compilation Framework for Lifelong Program Analysis \& Transformation},
+year = {2004},
+isbn = {0769521029},
+publisher = {IEEE Computer Society},
+address = {USA},
+abstract = {This paper describes LLVM (Low Level Virtual Machine),a compiler framework designed to support transparent, lifelongprogram analysis and transformation for arbitrary programs,by providing high-level information to compilertransformations at compile-time, link-time, run-time, and inidle time between runs.LLVM defines a common, low-levelcode representation in Static Single Assignment (SSA) form,with several novel features: a simple, language-independenttype-system that exposes the primitives commonly used toimplement high-level language features; an instruction fortyped address arithmetic; and a simple mechanism that canbe used to implement the exception handling features ofhigh-level languages (and setjmp/longjmp in C) uniformlyand efficiently.The LLVM compiler framework and coderepresentation together provide a combination of key capabilitiesthat are important for practical, lifelong analysis andtransformation of programs.To our knowledge, no existingcompilation approach provides all these capabilities.We describethe design of the LLVM representation and compilerframework, and evaluate the design in three ways: (a) thesize and effectiveness of the representation, including thetype information it provides; (b) compiler performance forseveral interprocedural problems; and (c) illustrative examplesof the benefits LLVM provides for several challengingcompiler problems.},
+booktitle = {Proceedings of the International Symposium on Code Generation and Optimization: Feedback-Directed and Runtime Optimization},
+pages = {75},
+location = {Palo Alto, California},
+series = {CGO '04}
+}

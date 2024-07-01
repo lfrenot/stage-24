@@ -2,3 +2,6 @@
 *.hd
 *.xml
 *.gz
+*.nav
+*.snm
+*.vrb
