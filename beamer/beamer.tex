@@ -119,30 +119,7 @@
   \end{itemize}
 \end{frame}
 
-\subsection*{State of the Art}
-\begin{frame}
-  \leon{TODO}
-\end{frame}
-
-\begin{frame}
-  \frametitle{LLVM and Vellvm}
-  \leon{TODO}
-\end{frame}
-
-\begin{frame}
-  \frametitle{Itrees}
-  \leon{TODO}
-\end{frame}
-
-\subsection*{Goal of the internship}
-
-\begin{frame}
-  \begin{block}{Goal of the internship}
-    \leon{TODO}
-  \end{block}
-\end{frame}
-
-\section{The pattern language}
+\section{Introduction}
 
 \begin{frame}
   \frametitle{Table of Contents}
@@ -150,18 +127,64 @@
 \end{frame}
 
 \begin{frame}
+  \frametitle{Background/Motivation}
+  \leon{Key points: gcc's 15 millions lines, CompCert, Vellvm and its appliations}
+\end{frame}
+
+\begin{frame}
+  \begin{block}{Goal of the internship}
+    \leon{Framework to formally verify optimizations in Vellvm}
+  \end{block}
+  \leon{DSL Pat, matcher, implementation, preserve semantics, generic substitution theorem}
+\end{frame}
+
+\section{Background}
+
+\begin{frame}
+  \frametitle{Table of Contents}
+  \tableofcontents[currentsection]
+\end{frame}
+
+\begin{frame}
+  \frametitle{LLVM and Vellvm}
+  \leon{formal definition of LLVM IR's semantics, frontends and backends, RISC-like with high-level informations, SSA form, named labels and registers, statically typed, integer-pointer casts, optimization and analysis $\leftrightarrow$ analysis and transformation passes}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Itrees}
+  \leon{Type figure (explication event, return, ret, tau, vis), coinductive $\rightarrow$ potentialy infinite $\rightarrow$ recursive and effectful programs including divergent computations, example figure (infinite computation, echo), effects/event handler, bisimilarity, denotational semantics}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Vellvm's semantics}
+  \leon{realistic subset, element of VIR's syntax $\leftrightarrow$ ITree, effects captured by Vis, non-trivial features (pointers, $\phi$, undef), ocfg, stack of interp (+ figure), level 0}
+\end{frame}
+
+\section{The pattern language}
+
+\begin{frame}
+  \frametitle{Table of Contents}
+  \tableofcontents[currentsection]
+\end{frame}
+
+\begin{frame}
   \frametitle{Pat}
-  \leon{TODO}
+  \leon{Figure, dependent type, explication for each pattern}
+\end{frame}
+
+\begin{frame}
+  \frametitle{A pattern for Block Fusion}
+  \leon{Pattern + figure, explanation}
 \end{frame}
 
 \begin{frame}
   \frametitle{MatchAll}
-  \leon{TODO}
+  \leon{Figure, explication for each pattern, detail one of them}
 \end{frame}
 
 \begin{frame}
   \frametitle{Specification}
-  \leon{TODO}
+  \leon{Graph, When/Map, detail on of the extractions}
 \end{frame}
 
 \section{Formal verification of an optimization pass}
@@ -173,12 +196,12 @@
 
 \begin{frame}
   \frametitle{Substitution under context}
-  \leon{TODO}
+  \leon{Figure + both listings, proof outline?}
 \end{frame}
 
 \begin{frame}
   \frametitle{Block Fusion}
-  \leon{TODO}
+  \leon{fusion, proof outilne + proof theorems listings}
 \end{frame}
 
 \section*{Conclusion}
