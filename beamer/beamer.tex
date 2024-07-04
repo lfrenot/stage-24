@@ -2,34 +2,33 @@
 
 \usepackage[style=numeric, natbib]{biblatex}
 \usepackage{caption}
-\usepackage{listings}
-\usepackage{soul}
-% \usepackage[margin=20ex]{geometry}
-% \usepackage{amsmath}
-% \usepackage{array}
-% \usepackage{booktabs}
-% \usepackage{caption}
-% \usepackage{fancyvrb}
-% \usepackage{graphicx}
-% \usepackage{hypdoc}
-% \usepackage{libertine}
-% \usepackage{longtable}
-% \usepackage{newtxmath}
-% \usepackage{tabularx}
-% \usepackage{zi4}
-% \usepackage{graphicx}
-% \usepackage{colortbl}
-% \usepackage{microtype}
-% \usepackage{balance}
-% \usepackage{mathtools}
-% \usepackage{float}
-% \usepackage{color}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{fancyvrb}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{newtxmath}
+\usepackage{tabularx}
+\usepackage{zi4}
+\usepackage{graphicx}
+\usepackage{colortbl}
+\usepackage{microtype}
+\usepackage{balance}
+\usepackage{mathtools}
+\usepackage{float}
+\usepackage{listings,lstlangcoq}
+\usepackage{xcolor}
+\usepackage{centernot}
+\usepackage[all]{xy}
 
 \lstset{language=sh,
-        basicstyle=\footnotesize\ttfamily,
-        keywordstyle=\footnotesize\color{blue}\ttfamily,
-        moredelim=**[is][\btHL]{|}{|},
-        escapeinside={<@}{@>}
+  basicstyle=\footnotesize\ttfamily,
+  keywordstyle=\footnotesize\color{blue}\ttfamily,
+  moredelim=**[is][\btHL]{|}{|},
+  escapeinside={<@}{@>}
 }
 
 \usetheme{Antibes}
@@ -74,8 +73,8 @@
   morekeywords={Variant, fun, Arguments, Type, cofix},
   % morekeywords={SOCKAPI,ITREE,data_at,data_at_},
   emph={%
-    SOCKAPI,ITree,data_at,data_at_
-  },
+      SOCKAPI,ITree,data_at,data_at_
+    },
   emphstyle={\bfseries\color{green!40!red!80}},
   showstringspaces=false,
   basicstyle=\small\ttfamily,
@@ -102,117 +101,372 @@
 
 \section*{Introduction}
 
-\subsection*{Context \& Motivations}
-
 \begin{frame}
-  Context
-  \begin{itemize}
-    \item M2 research internship
-    \item 5 Months in LIP Computer Science laboratory at ENS Lyon.
-    \item Compilation and Analysis, Software and Hardware Team.
-  \end{itemize}
-  Keywords
-  \begin{itemize}
-    \item Verified Compilation
-    \item Verified Code transformations
-    \item DSL of patterns
-  \end{itemize}
+  \begin{block}{Context}
+    \begin{itemize}
+      \item M2 research internship
+      \item 5 Months in LIP Computer Science laboratory at ENS Lyon.
+      \item Compilation and Analysis, Software and Hardware Team.
+    \end{itemize}
+  \end{block}
+  \begin{block}{Keywords}
+    \begin{itemize}
+      \item Verified Compilation
+      \item Verified Code transformations
+      \item DSL of patterns
+    \end{itemize}
+  \end{block}
 \end{frame}
 
 \section{Introduction}
 
-\begin{frame}
-  \frametitle{Table of Contents}
+\begin{frame}{Table of Contents}
   \tableofcontents
 \end{frame}
 
-\begin{frame}
-  \frametitle{Background/Motivation}
-  \leon{Key points: gcc's 15 millions lines, CompCert, Vellvm and its appliations}
+\subsection*{Motivation}
+
+\begin{frame}{Motivation}
+  \begin{itemize}
+    \item GCC\@: 15 million lines of code
+    \item CompCert (2009)
+    \item Vellvm (2021)
+  \end{itemize}
 \end{frame}
+
+\subsection*{Goal of the internship}
 
 \begin{frame}
   \begin{block}{Goal of the internship}
-    \leon{Framework to formally verify optimizations in Vellvm}
+    Formally verify optimizations in Vellvm
   \end{block}
-  \leon{DSL Pat, matcher, implementation, preserve semantics, generic substitution theorem}
+  \begin{itemize}
+    \item Identify a subgraph with specific structural properties.
+    \item Link the transformed subgraph back with the context.
+  \end{itemize}
+  % \leon{DSL Pat, matcher, implementation, preserve semantics, generic substitution theorem}
+\end{frame}
+
+\begin{frame}{Contributions}
+  \begin{itemize}
+    \item Designed and implemented a DSL of patterns over graphs, Pat.
+    \item Equipped it with a matcher that computes the set of decompositions that match a given pattern in a given graph.
+    \item Proved a generic substitution theorem.
+    \item Leveraged it and the specifications given by Pat to establish a proof for an optimization.
+  \end{itemize}
 \end{frame}
 
 \section{Background}
 
-\begin{frame}
-  \frametitle{Table of Contents}
+\begin{frame}{Table of Contents}
   \tableofcontents[currentsection]
 \end{frame}
 
-\begin{frame}
-  \frametitle{LLVM and Vellvm}
-  \leon{formal definition of LLVM IR's semantics, frontends and backends, RISC-like with high-level informations, SSA form, named labels and registers, statically typed, integer-pointer casts, optimization and analysis $\leftrightarrow$ analysis and transformation passes}
+\subsection*{LLVM IR}
+
+\begin{frame}{LLVM IR}
+  \begin{itemize}
+    \item Intermediate representation for multiple frontends and backends.
+    \item RISC-like instruction set with high-level informations.
+    \item Features:\begin{itemize}
+            \item SSA form guarantee
+            \item named labels and registers
+            \item integer-pointer casts
+            \item analysis and transformation passes
+          \end{itemize}
+    \item Vellvm: formally define LLVM IR's semantics and build verified components.
+  \end{itemize}
 \end{frame}
 
-\begin{frame}
-  \frametitle{Itrees}
-  \leon{Type figure (explication event, return, ret, tau, vis), coinductive $\rightarrow$ potentialy infinite $\rightarrow$ recursive and effectful programs including divergent computations, example figure (infinite computation, echo), effects/event handler, bisimilarity, denotational semantics}
+\subsection*{ITrees}
+
+\begin{frame}[fragile]{Itrees}
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+CoInductive itree (E : Type -> Type) (R : Type) : Type :=
+  | Ret (r : R)
+  | Tau (t : itree E R)
+  | Vis {A : Type} (e : E A) (k : A -> itree E R).
+  \end{lstlisting}
+    \caption{The \ilc{itree} datatype}
+    \label{fig:itree}
+  \end{figure}
+  \leon{coinductive $\rightarrow$ potentialy infinite $\rightarrow$ recursive and effectful programs including divergent computations, example figure (infinite computation, echo), effects/event handler, bisimilarity, denotational semantics}
 \end{frame}
 
-\begin{frame}
-  \frametitle{Vellvm's semantics}
-  \leon{realistic subset, element of VIR's syntax $\leftrightarrow$ ITree, effects captured by Vis, non-trivial features (pointers, $\phi$, undef), ocfg, stack of interp (+ figure), level 0}
+\subsection*{Vellvm}
+
+\begin{frame}{Vellvm's semantics}
+  \begin{itemize}
+    \item Verified IR: a realistic subset of LLVM IR.
+    \item Syntax captured by ITrees, effects captured by Vis.
+    \item Supports non-trivial features: pointers, $\phi$-nodes, undef \ldots
+  \end{itemize}
+  \leon{stack of interp (+ figure), level 0}
 \end{frame}
 
 \section{The pattern language}
 
-\begin{frame}
-  \frametitle{Table of Contents}
+\begin{frame}{Table of Contents}
   \tableofcontents[currentsection]
 \end{frame}
 
-\begin{frame}
-  \frametitle{Pat}
-  \leon{Figure, dependent type, explication for each pattern}
+\subsection*{The Pattern datatype}
+
+\begin{frame}[fragile]{Pat}
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Inductive Pattern : Type -> Type :=
+  |Graph: Pattern ocfg
+  |When: forall  {S}, Pattern S -> (S -> bool) -> Pattern S
+  |Map: forall  {S} {T}, Pattern S -> (S -> T) -> Pattern T
+  |Focus: forall  {S}, Pattern S -> Pattern (ocfg * S)
+  |Block: forall  {S}, Pattern S -> Pattern (block_id * blk * S)
+  |Head: forall  {S}, Pattern S -> Pattern (block_id * blk * S)
+  |Branch: forall  {S}, Pattern S -> Pattern (block_id * blk * S)
+  \end{lstlisting}
+    \caption{The \ilc{Pattern} datatype}
+    \label{fig:pat}
+  \end{figure}
+  \leon{dependent type, explication for each pattern}
 \end{frame}
 
-\begin{frame}
-  \frametitle{A pattern for Block Fusion}
-  \leon{Pattern + figure, explanation}
+\begin{frame}[fragile]{A pattern for Block Fusion}
+  \begin{figure}
+    \scalebox{0.75}{\xymatrix{
+    &&&&\\
+    &*+[F]\txt{\ilc{A}\\\ilc{Block}: any block}\ar[dd]&&\;\ar@{-->}`u[ul] `[ll] [ll]&\\
+    *+[F.]\txt{\ilc{When _ BlockFusion_f}\\ asserts that \ilc{B} is\\the only successor of \ilc{A}}\ar@{..>} [r]&&&\txt{Graph}\\
+    &*+[F]\txt{\ilc{B}\\\ilc{Head}: no predecessors\\once \ilc{A} is removed}\ar@{-->}`d[dr] `[rr] [rr]&&&\\
+    &&&
+    \save "2,3"."4,5"*[F--]\frm{} \restore
+    }}
+  \end{figure}
+  \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+    pfusion := When (Block (Head Graph)) BlockFusion_f
+    \end{lstlisting}
+  % \leon{Figure, explanation}
 \end{frame}
 
-\begin{frame}
-  \frametitle{MatchAll}
-  \leon{Figure, explication for each pattern, detail one of them}
+\subsection*{A Matcher function}
+
+\begin{frame}[fragile]{MatchAll}
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Fixpoint MatchAll {S} (P: Pattern S) (g: ocfg) : list S :=
+  match P with
+    | Graph => [g]
+    | When p f => filter (fun x => f x = true) (MatchAll p g) 
+    | Map p f => map f (MatchAll p g)
+    | Focus p => flat_map_r (MatchAll p) (focus g)
+    | Block p => flat_map_r (MatchAll p) (blocks g)
+    | Head p => flat_map_r (MatchAll p) (heads g)
+    | Branch p => flat_map_r (MatchAll p) (branches g)
+  end.
+  \end{lstlisting}
+    \caption{The \ilc{MatchAll} function}
+    \label{fig:matchall}
+  \end{figure}
+  \leon{Figure, explication for the patterns, detail one of them}
 \end{frame}
 
-\begin{frame}
-  \frametitle{Specification}
-  \leon{Graph, When/Map, detail on of the extractions}
+\begin{frame}[fragile]{An example: focus}
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Definition focus_aux id b acc : list ocfg :=
+  acc ++ (map (insert id b) acc).
+
+Definition focus (G: ocfg) :=
+  map (fun G' => (G', G ∖ G')) (map_fold focus_aux [∅] G).
+  \end{lstlisting}
+    \caption{An implementation of focus}
+  \end{figure}
+\end{frame}
+
+\subsection*{Specification}
+
+\begin{frame}[fragile]{Specification}
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+forall (G:ocfg) (X:S), X ∈ MatchAll pat G IFF R_pat G X
+
+forall (P: Pattern S) f X G, X ∈ (MatchAll (When P f) G) IFF
+  f X = true \/ X ∈ (MatchAll P G).
+  \end{lstlisting}
+    \caption{The correctness statements for \ilc{Graph} and \ilc{When}}
+  \end{figure}
+\end{frame}
+
+\begin{frame}[fragile]{Specification of Graph}
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+(* The semantics for heads_aux *)
+Record heads_aux_sem (G0 G G': ocfg) id b := {
+  EQ: G' = delete id G0;
+  IN: G !! id = Some b;
+  PRED: predecessors id G0 = ∅
+}.
+
+(* The semantics for heads and Head *)
+Definition heads_sem (G G':ocfg) (id:block_id) b := heads_aux_sem G G G' id b.
+    \end{lstlisting}
+    \caption{The specification of \ilc{Head}}
+    \label{fig:sem_head_def}
+  \end{figure}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+(* heads_aux follows its semantics *)
+Lemma heads_aux_correct:
+  forall G G' G0 id b,
+  (id, b, G') ∈ (map_fold (heads_aux G0) [] G) IFF heads_aux_sem G0 G G' id b.
+
+(* heads follows its semantics *)
+Lemma heads_correct:
+  forall G G' id b,
+  (id, b, G') ∈ (heads G) IFF heads_sem G G' id b.
+
+(* MatchAll Head follows the given semantics *)
+Theorem Pattern_Head_correct {S}:
+  forall (G: ocfg) (P: Pattern S) id b X,
+  (id, b, X) ∈ (MatchAll (Head P) G) IFF
+  exists G', heads_sem G G' id b /\ X ∈ (MatchAll P G').
+      \end{lstlisting}
+    \caption{The correctness statement of \ilc{MatchAll Head}}
+    \label{fig:head_cor}
+  \end{figure}
 \end{frame}
 
 \section{Formal verification of an optimization pass}
 
-\begin{frame}
-  \frametitle{Table of Contents}
+\begin{frame}{Table of Contents}
   \tableofcontents[currentsection]
 \end{frame}
 
-\begin{frame}
-  \frametitle{Substitution under context}
-  \leon{Figure + both listings, proof outline?}
+\subsection*{Substitution under context}
+
+\begin{frame}{Substitution under context}
+  \begin{figure}
+    \xymatrix{
+    &&&&&&\\
+    G_2\approx G_2'&\implies&*+[F]{G_2}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G_1}\ar@{-->}`u[ul] `[l] [l]&\approx&*+[F]{G_2'}\ar@{-->}`d[dr] `[r] [r]&*+[F]{G_1}\ar@{-->}`u[ul] `[l] [l]\\
+    &&&&&&
+    }
+    \caption{Ideal substitution}
+  \end{figure}
 \end{frame}
 
 \begin{frame}
-  \frametitle{Block Fusion}
-  \leon{fusion, proof outilne + proof theorems listings}
+  \begin{figure}
+    \scalebox{0.6}{\xymatrix{
+    *+[F]{A}\ar[dd]&&&&*+[F]{A}\ar[dd] &&&&\\
+    &\approx& *+[F]{AB}&\centernot\implies&&*+[F]{C}\ar[dl]&\approx&*+[F]{AB}&*+[F]{C}\ar@{-->}[dl]\\
+    *+[F]{B}&&&& *+[F]{B}&&&*+[F--]{B}&\\
+    *+[F]{A}\ar[dd]&&&&*+[F]{A}\ar[dd] &&&*+[F--]{A}&\\
+    &\approx& *+[F]{AB}&\centernot\implies&&*+[F]{C}\ar[ul]&\approx&*+[F]{AB}&*+[F]{C}\ar@{-->}[ul]\\
+    *+[F]{B}&&&& *+[F]{B}&&&&\\
+    *+[F]{A}\ar[dd]&&&&*+[F]{A}\ar[dd] &&&&\\
+    &\approx& *+[F]{AB}&\centernot\implies&&*+[F]{\phi(B,x);;C}&\approx&*+[F]{AB}\ar[r]&*+[F]{\phi(B,x);;C}\\
+    *+[F]{B}&&&& *+[F]{B}\ar[ur]&&&&
+    }}
+    \caption{Trying to apply the ideal substitution to Block Fusion}
+  \end{figure}
 \end{frame}
 
-\section*{Conclusion}
+\begin{frame}[fragile]
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\footnotesize\ttfamily]
+Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg)
+  (σ : block_id -> block_id) (nTO: gset block_id) :
 
-\begin{frame}
-  \frametitle{Conclusion}
-  \leon{TODO}
+  (* Well formedness properties *)
+  inputs g2' ∖ inputs g2 ⊆ nTO -> 
+  nTO ⊆ inputs g2 ∪ inputs g2' -> 
+  nTO ## outputs g1 ->
+  g1 ## g2 -> 
+  ocfg_term_rename σ g1 ## g2' ->
+
+  (* σ is a finite map from the inputs of g2 to the inputs of g2' *)
+  (forall id, id ∈ inputs g2 -> (σ id) ∈ inputs g2') ->
+  (forall id, id ∉ inputs g2 -> (σ id) = id) ->
+  
+  (* The substituted subgraph is equivalent to the original one *)
+  (forall from to, to ∉ nTO -> 
+    ⟦g2⟧ (from,to) ≈ ⟦g2'⟧ (from, SIG to)) ->
+
+  (* Then, the graphs are equivalent from any valid initial start *)
+  forall from to, to ∉ nTO ->
+    ⟦g2 ∪ g1⟧ (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧ (from, σ to).
+      \end{lstlisting}
+    \label{fig:ocfg_equiv}
+  \end{figure}
 \end{frame}
 
-\begin{frame}
-  \frametitle{Thank you for listening.}
+\subsection*{BlockFusion}
+
+% \begin{frame}[fragile]{Block Fusion}
+%   \begin{figure}
+%     \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+% Definition BlockFusion_f {S}: (block_id * blk * (block_id * blk * S) -> bool) :=
+%   fun '(_, A, (idB, B, _)) => is_seq A idB && no_phi B.
+
+% Definition BlockFusion {S} (P: Pattern S) := When (Block (Head P)) BlockFusion_f
+%   \end{lstlisting}
+%     \caption{The \ilc{BlockFusion} pattern}
+%     \label{fig:bfusion}
+%   \end{figure}
+% \end{frame}
+
+\begin{frame}[fragile]
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Definition σfusion idA idB := fun (id: block_id) => if decide (id=idA) then idB else id.
+
+Definition fusion (σ: block_id -> block_id) (A B: blk): blk := {|
+  blk_phis       := A.(blk_phis);
+  blk_code       := A.(blk_code) ++ B.(blk_code);
+  blk_term       := term_rename σ B.(blk_term)
+|}.
+    \end{lstlisting}
+    \caption{The \ilc{fusion} function}
+    \label{fig:fusion}
+  \end{figure}
+\end{frame}
+
+\begin{frame}[fragile]
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Lemma fusion_correct {S} G idA A idB B P (X:S):
+  let σ := σfusion idA idB in
+  (idA, A, (idB, B, X)) ∈ (MatchAll (BlockFusion P) G) ->
+  forall f to : block_id, to ∉ {[idB]} ->
+    ⟦ {[idA := A; idB := B]} ⟧ (f, to) ≈ ⟦ {[idB := fusion σ idA A B]} ⟧ (f, σ to).
+
+Theorem Denotation_BlockFusion_correct {S} G idA A idB B f to P (X:S):
+  let σ := σfusion idA idB in
+  let G0 := delete idB (delete idA G) in
+  to <> idB ->
+  (idA, A, (idB, B, X)) ∈ (MatchAll (BlockFusion P) G) ->
+  ⟦ G ⟧ (f, to) ≈ ⟦ <[idB:=fusion σ idA A B]> (ocfg_term_rename σ G0) ⟧ (f, σ to).
+        \end{lstlisting}
+    \caption{the correctness theorems of Block Fusion}
+    \label{fig:fusion_proof}
+  \end{figure}
+\end{frame}
+
+\section{Conclusion}
+
+\begin{frame}{Conclusion}
+  \begin{itemize}
+    \item DSL of Patterns for specifying structural properties on subgraphs.
+    \item Matcher function to identify subgraphs that match these properties.
+    \item Generic substitution theorem to prove optimizations.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Thank you for listening.}
   Any questions?
 \end{frame}
 
