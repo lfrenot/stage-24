@@ -22,6 +22,7 @@
 \usepackage{listings,lstlangcoq}
 \usepackage{xcolor}
 \usepackage{centernot}
+\usepackage{soul}
 \usepackage[all]{xy}
 
 \lstset{language=sh,
@@ -99,38 +100,85 @@
 
 \frame{\titlepage}
 
-\section*{Introduction}
-
-\begin{frame}
-  \begin{block}{Context}
-    \begin{itemize}
-      \item M2 research internship
-      \item 5 Months in LIP Computer Science laboratory at ENS Lyon.
-      \item Compilation and Analysis, Software and Hardware Team.
-    \end{itemize}
-  \end{block}
-  \begin{block}{Keywords}
-    \begin{itemize}
-      \item Verified Compilation
-      \item Verified Code transformations
-      \item DSL of patterns
-    \end{itemize}
-  \end{block}
-\end{frame}
+% \begin{frame}
+%   \begin{block}{Context}
+%     \begin{itemize}
+%       \item M2 research internship
+%       \item 5 Months in LIP Computer Science laboratory at ENS Lyon.
+%       \item Compilation and Analysis, Software and Hardware Team.
+%     \end{itemize}
+%   \end{block}
+%   \begin{block}{Keywords}
+%     \begin{itemize}
+%       \item Verified Compilation
+%       \item Verified Code transformations
+%       \item DSL of patterns
+%     \end{itemize}
+%   \end{block}
+%   \leon{Enlever}
+% \end{frame}
 
 \section{Introduction}
 
-\begin{frame}{Table of Contents}
-  \tableofcontents
-\end{frame}
+% \begin{frame}{Table of Contents}
+%   \tableofcontents
+% \end{frame}
 
 \subsection*{Motivation}
 
 \begin{frame}{Motivation}
+  Critical sectors: code as bug-free as possible.\\
+  Important part of the toolchain: compilation.\\
+  Compilers are also very complex objects. gcc: 15 million lines of code.
+  \begin{block}{How to remove bugs introduced by compilation?}
+    \begin{itemize}
+      \item Compile without optimization, and manually go through the generated machine code to ensure it follows the original code,
+      \item or use verified compilers.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Verified compilers}
+  Compilers written inside of a proof assistant, for example Coq, and proven correct with the tools it provides.
   \begin{itemize}
-    \item GCC\@: 15 million lines of code
-    \item CompCert (2009)
-    \item Vellvm (2021)
+    \item CompCert (2009), verified compiler for the ISO C 99 language,
+    \item Vellvm (2021), verified compiler project for LLVM IR.
+  \end{itemize}
+\end{frame}
+
+\subsection*{Background: LLVM}
+
+\begin{frame}{LLVM IR}
+  \begin{figure}
+    \scalebox{.85}{\xymatrix{
+      &Front-end&&Back-end\\
+      C\ar[r]&*+[F]{Clang}\ar@(r,l)[dr]&&&x86\\
+      Rust\ar[r]&*+[F]{rustc}\ar[r]&LLVM\ IR \ar@(ul,ur)[]^{\txt{optimization\\passes}} \ar[r]&*+[F]\txt{LLVM\\Compiler} \ar@(r,l)[ur]\ar[r]\ar@(r,l)[dr]&ARM\\
+      Go\ar[r]&*+[F]{Gollvm}\ar@(r,l)[ur]&&&RISC-V
+      \save "1,2"."4,2"*+[F--]\frm{} \restore
+      \save "1,4"."4,4"*+[F--]\frm{} \restore
+    }}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{}
+  \begin{figure}
+    \includegraphics[height=.8\textheight]{images/output2.pdf}
+    \caption{An LLVM function}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{LLVM IR}
+  \begin{itemize}
+    \item Intermediate representation for multiple frontends and backends.
+    \item RISC-like instruction set with high-level informations.
+    \item Features:\begin{itemize}
+            \item SSA form guarantee
+            \item named labels and registers
+            \item integer-pointer casts
+            \item analysis and transformation passes
+          \end{itemize}
+    \item Vellvm: formally define LLVM IR's semantics and build verified components.
   \end{itemize}
 \end{frame}
 
@@ -140,6 +188,7 @@
   \begin{block}{Goal of the internship}
     Formally verify optimizations in Vellvm
   \end{block}
+
   \begin{itemize}
     \item Identify a subgraph with specific structural properties.
     \item Link the transformed subgraph back with the context.
@@ -156,79 +205,35 @@
   \end{itemize}
 \end{frame}
 
-\section{Background}
+\begin{frame}
+  \begin{figure}
+    \scalebox{.8}{\xymatrix{
+      &&&\txt{LLVM IR}\ar[dd]^{\txt{Parsing}}\\
+      &&*+[F]{\txt{Coq\\Vellvm}}\\
+      *+[F]{\mathcal{T}}&\txt{Analysis}\ar[dd]&&*+[F--]{\txt{OCFG}}\ar@{=>}[r]^{\llbracket\ldots\rrbracket} \ar[dd]^{\mathcal{T}} & *+[F--]{\txt{ITrees\\Semantic}}\ar@{~}@<-2pt>[dd]\ar@{~}@<+2pt>[dd]^{Bisimilarity}\\
+      &&&\ar@(l,r)[ull]_{\txt{Pattern}}\ar@(l,r)[dll]^{\txt{Substitution}}\\
+      &\txt{Emission}&&*+[F--]{\txt{OCFG}}\ar@{=>}[r]^{\llbracket\ldots\rrbracket} \ar[dd]^{\txt{Printer}} & *+[F--]{\txt{ITrees\\Semantic}}\\
+      &&&&&&\\
+      &&&\txt{LLVM IR}
+      \save "2,3"."6,6"*+[F]\frm{} \restore
+      \save "3,1"."5,2"*+[F]\frm{} \restore
+    }}
+  \end{figure}
+\end{frame}
+
+\section{An example of optimization: Block Fusion}
 
 \begin{frame}{Table of Contents}
-  \tableofcontents[currentsection]
+  \tableofcontents
 \end{frame}
 
-\subsection*{LLVM IR}
-
-\begin{frame}{LLVM IR}
-  \begin{itemize}
-    \item Intermediate representation for multiple frontends and backends.
-    \item RISC-like instruction set with high-level informations.
-    \item Features:\begin{itemize}
-            \item SSA form guarantee
-            \item named labels and registers
-            \item integer-pointer casts
-            \item analysis and transformation passes
-          \end{itemize}
-    \item Vellvm: formally define LLVM IR's semantics and build verified components.
-  \end{itemize}
-\end{frame}
-
-\subsection*{ITrees}
-
-\begin{frame}[fragile]{Itrees}
+\begin{frame}{Block Fusion}
   \begin{figure}
-    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-CoInductive itree (E : Type -> Type) (R : Type) : Type :=
-  | Ret (r : R)
-  | Tau (t : itree E R)
-  | Vis {A : Type} (e : E A) (k : A -> itree E R).
-  \end{lstlisting}
-    \caption{The \ilc{itree} datatype}
-    \label{fig:itree}
+    \includegraphics[width=.45\textwidth]{images/output.pdf}
+    \centering $\implies$
+    \includegraphics[width=.45\textwidth]{images/output2.pdf}
+    \caption{Applying Block Fusion to a CFG}
   \end{figure}
-  \leon{coinductive $\rightarrow$ potentialy infinite $\rightarrow$ recursive and effectful programs including divergent computations, example figure (infinite computation, echo), effects/event handler, bisimilarity, denotational semantics}
-\end{frame}
-
-\subsection*{Vellvm}
-
-\begin{frame}{Vellvm's semantics}
-  \begin{itemize}
-    \item Verified IR: a realistic subset of LLVM IR.
-    \item Syntax captured by ITrees, effects captured by Vis.
-    \item Supports non-trivial features: pointers, $\phi$-nodes, undef \ldots
-  \end{itemize}
-  \leon{stack of interp (+ figure), level 0}
-\end{frame}
-
-\section{The pattern language}
-
-\begin{frame}{Table of Contents}
-  \tableofcontents[currentsection]
-\end{frame}
-
-\subsection*{The Pattern datatype}
-
-\begin{frame}[fragile]{Pat}
-  \begin{figure}
-    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Inductive Pattern : Type -> Type :=
-  |Graph: Pattern ocfg
-  |When: forall  {S}, Pattern S -> (S -> bool) -> Pattern S
-  |Map: forall  {S} {T}, Pattern S -> (S -> T) -> Pattern T
-  |Focus: forall  {S}, Pattern S -> Pattern (ocfg * S)
-  |Block: forall  {S}, Pattern S -> Pattern (block_id * blk * S)
-  |Head: forall  {S}, Pattern S -> Pattern (block_id * blk * S)
-  |Branch: forall  {S}, Pattern S -> Pattern (block_id * blk * S)
-  \end{lstlisting}
-    \caption{The \ilc{Pattern} datatype}
-    \label{fig:pat}
-  \end{figure}
-  \leon{dependent type, explication for each pattern}
 \end{frame}
 
 \begin{frame}[fragile]{A pattern for Block Fusion}
@@ -243,9 +248,52 @@ Inductive Pattern : Type -> Type :=
     }}
   \end{figure}
   \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-    pfusion := When (Block (Head Graph)) BlockFusion_f
+pfusion := When (Block (Head Graph)) BlockFusion_f
+  \end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{A function for Block Fusion}
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Definition fusion (A B: blk): blk := {|
+  blk_phis       := A.(blk_phis);
+  blk_code       := A.(blk_code) ++ B.(blk_code);
+  blk_term       := term_rename (id A) (id B) B.(blk_term)
+|}.
+
+Definition block_fusion (G: ocfg) :=
+  match (MatchAll pfusion G) with
+    | (A, (B, G'))::q => G' ∪ [fusion A B]
+    | _ => G
+  end.
     \end{lstlisting}
-  % \leon{Figure, explanation}
+  \end{figure}
+\end{frame}
+
+\section{The pattern language}
+
+\begin{frame}{Table of Contents}
+  \tableofcontents[currentsection]
+\end{frame}
+
+\subsection*{The Pat datatype}
+
+\begin{frame}[fragile]{Pat}
+  \begin{figure}
+    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
+Inductive Pattern : Type -> Type :=
+  |Graph: Pattern ocfg
+  |When: forall  {S}, Pattern S -> (S -> bool) -> Pattern S
+  |Map: forall  {S} {T}, Pattern S -> (S -> T) -> Pattern T
+  |Focus: forall  {S}, Pattern S -> Pattern (ocfg * S)
+  |Block: forall  {S}, Pattern S -> Pattern (blk * S)
+  |Head: forall  {S}, Pattern S -> Pattern (blk * S)
+  |Branch: forall  {S}, Pattern S -> Pattern (blk * S)
+  \end{lstlisting}
+    \caption{The \ilc{Pattern} datatype}
+    \label{fig:pat}
+  \end{figure}
+  % \leon{dependent type, quick explication for each pattern}
 \end{frame}
 
 \subsection*{A Matcher function}
@@ -267,10 +315,70 @@ Fixpoint MatchAll {S} (P: Pattern S) (g: ocfg) : list S :=
     \caption{The \ilc{MatchAll} function}
     \label{fig:matchall}
   \end{figure}
-  \leon{Figure, explication for the patterns, detail one of them}
+  % \leon{explication for the type, don't detail}
 \end{frame}
 
-\begin{frame}[fragile]{An example: focus}
+\section{Formal verification of an optimization pass}
+
+% \begin{frame}{Table of Contents}
+%   \tableofcontents[currentsection]
+% \end{frame}
+
+% \subsection*{Formal verification of an optimization pass}
+
+
+
+% \begin{frame}[fragile,noframenumbering]
+%   \begin{figure}
+%     \begin{lstlisting}[style=customcoq,basicstyle=\footnotesize\ttfamily]
+% Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg)
+%   (σ : block_id -> block_id) (nTO: gset block_id) :
+
+%   (* Well formedness properties *)
+%   WF g1 g2 g2' nTO ->
+
+%   (* σ is a finite map from the inputs of g2 to the inputs of g2' *)
+%   FM g2 g2' SIG ->
+  
+%   (* The substituted subgraph is equivalent to the original one *)
+%   (forall from to, to ∉ nTO -> 
+%     ⟦g2⟧ (from,to) ≈ ⟦g2'⟧ (from, SIG to)) ->
+
+%   (* Then, the graphs are equivalent from any valid initial start *)
+%   forall from to, to ∉ nTO ->
+%     ⟦g2 ∪ g1⟧ (from,to) ≈ ⟦g2' ∪ ocfg_term_rename σ g1⟧ (from, σ to).
+%       \end{lstlisting}
+%     \label{fig:ocfg_equiv}
+%   \end{figure}
+% \end{frame}
+
+\section{Conclusion}
+
+\begin{frame}{Future Works}
+  \begin{itemize}
+    \item More efficient matcher (MatchOne)
+    \item Other structural properties (Loops)
+    \item 
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusion}
+  \begin{itemize}
+    \item DSL of Patterns for specifying structural properties on subgraphs.
+    \item Matcher function to identify subgraphs that match these properties.
+    \item Generic substitution theorem to prove optimizations.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Thank you for listening.}
+  Any questions?
+\end{frame}
+
+\section*{Annex}
+
+\subsection*{Implementation}
+
+\begin{frame}[fragile,noframenumbering]{An example: focus}
   \begin{figure}
     \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Definition focus_aux id b acc : list ocfg :=
@@ -285,7 +393,7 @@ Definition focus (G: ocfg) :=
 
 \subsection*{Specification}
 
-\begin{frame}[fragile]{Specification}
+\begin{frame}[fragile,noframenumbering]{Specification}
   \begin{figure}
     \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 forall (G:ocfg) (X:S), X ∈ MatchAll pat G IFF R_pat G X
@@ -297,7 +405,7 @@ forall (P: Pattern S) f X G, X ∈ (MatchAll (When P f) G) IFF
   \end{figure}
 \end{frame}
 
-\begin{frame}[fragile]{Specification of Graph}
+\begin{frame}[fragile,noframenumbering]{Specification}
   \begin{figure}
     \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 (* The semantics for heads_aux *)
@@ -315,7 +423,7 @@ Definition heads_sem (G G':ocfg) (id:block_id) b := heads_aux_sem G G G' id b.
   \end{figure}
 \end{frame}
 
-\begin{frame}[fragile]
+\begin{frame}[fragile,noframenumbering]
   \begin{figure}
     \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 (* heads_aux follows its semantics *)
@@ -339,15 +447,9 @@ Theorem Pattern_Head_correct {S}:
   \end{figure}
 \end{frame}
 
-\section{Formal verification of an optimization pass}
+\subsection*{Substitution}
 
-\begin{frame}{Table of Contents}
-  \tableofcontents[currentsection]
-\end{frame}
-
-\subsection*{Substitution under context}
-
-\begin{frame}{Substitution under context}
+\begin{frame}[noframenumbering]{Substitution under context}
   \begin{figure}
     \xymatrix{
     &&&&&&\\
@@ -358,9 +460,9 @@ Theorem Pattern_Head_correct {S}:
   \end{figure}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[noframenumbering]
   \begin{figure}
-    \scalebox{0.6}{\xymatrix{
+    \scalebox{0.55}{\xymatrix{
     *+[F]{A}\ar[dd]&&&&*+[F]{A}\ar[dd] &&&&\\
     &\approx& *+[F]{AB}&\centernot\implies&&*+[F]{C}\ar[dl]&\approx&*+[F]{AB}&*+[F]{C}\ar@{-->}[dl]\\
     *+[F]{B}&&&& *+[F]{B}&&&*+[F--]{B}&\\
@@ -368,14 +470,19 @@ Theorem Pattern_Head_correct {S}:
     &\approx& *+[F]{AB}&\centernot\implies&&*+[F]{C}\ar[ul]&\approx&*+[F]{AB}&*+[F]{C}\ar@{-->}[ul]\\
     *+[F]{B}&&&& *+[F]{B}&&&&\\
     *+[F]{A}\ar[dd]&&&&*+[F]{A}\ar[dd] &&&&\\
-    &\approx& *+[F]{AB}&\centernot\implies&&*+[F]{\phi(B,x);;C}&\approx&*+[F]{AB}\ar[r]&*+[F]{\phi(B,x);;C}\\
-    *+[F]{B}&&&& *+[F]{B}\ar[ur]&&&&
+    &\approx& *+[F]{AB}&\centernot\implies&&*+[F]{\txt{$\phi(B,x)$\\$C$}}&\approx&*+[F]{AB}\ar[r]&*+[F]{\txt{$\phi(B,x)$\\$C$}}\\
+    *+[F]{B}&&&& *+[F]{B}\ar[ur]&&&&&&\\
+    \save "1,1"."3,9"*+[F.]\frm{} \restore
+    \save "4,1"."6,9"*+[F.]\frm{} \restore
+    \save "7,1"."9,10"*+[F.]\frm{} \restore
     }}
     \caption{Trying to apply the ideal substitution to Block Fusion}
   \end{figure}
 \end{frame}
 
-\begin{frame}[fragile]
+\subsection*{Semantic proofs}
+
+\begin{frame}[fragile,noframenumbering]
   \begin{figure}
     \begin{lstlisting}[style=customcoq,basicstyle=\footnotesize\ttfamily]
 Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg)
@@ -404,38 +511,7 @@ Theorem denote_ocfg_equiv (g1 g2 g2' : ocfg)
   \end{figure}
 \end{frame}
 
-\subsection*{BlockFusion}
-
-% \begin{frame}[fragile]{Block Fusion}
-%   \begin{figure}
-%     \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-% Definition BlockFusion_f {S}: (block_id * blk * (block_id * blk * S) -> bool) :=
-%   fun '(_, A, (idB, B, _)) => is_seq A idB && no_phi B.
-
-% Definition BlockFusion {S} (P: Pattern S) := When (Block (Head P)) BlockFusion_f
-%   \end{lstlisting}
-%     \caption{The \ilc{BlockFusion} pattern}
-%     \label{fig:bfusion}
-%   \end{figure}
-% \end{frame}
-
-\begin{frame}[fragile]
-  \begin{figure}
-    \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
-Definition σfusion idA idB := fun (id: block_id) => if decide (id=idA) then idB else id.
-
-Definition fusion (σ: block_id -> block_id) (A B: blk): blk := {|
-  blk_phis       := A.(blk_phis);
-  blk_code       := A.(blk_code) ++ B.(blk_code);
-  blk_term       := term_rename σ B.(blk_term)
-|}.
-    \end{lstlisting}
-    \caption{The \ilc{fusion} function}
-    \label{fig:fusion}
-  \end{figure}
-\end{frame}
-
-\begin{frame}[fragile]
+\begin{frame}[fragile,noframenumbering]{Block Fusion}
   \begin{figure}
     \begin{lstlisting}[style=customcoq,basicstyle=\small\ttfamily]
 Lemma fusion_correct {S} G idA A idB B P (X:S):
@@ -454,20 +530,6 @@ Theorem Denotation_BlockFusion_correct {S} G idA A idB B f to P (X:S):
     \caption{the correctness theorems of Block Fusion}
     \label{fig:fusion_proof}
   \end{figure}
-\end{frame}
-
-\section{Conclusion}
-
-\begin{frame}{Conclusion}
-  \begin{itemize}
-    \item DSL of Patterns for specifying structural properties on subgraphs.
-    \item Matcher function to identify subgraphs that match these properties.
-    \item Generic substitution theorem to prove optimizations.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Thank you for listening.}
-  Any questions?
 \end{frame}
 
 \end{document}
